@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -11,7 +11,6 @@ import {
 } from '@mui/material';
 import {
   Favorite,
-  Hug,
   SelfImprovement,
   MusicNote,
   Lightbulb
@@ -49,7 +48,7 @@ export const OldTomComfortCharacter: React.FC<OldTomComfortCharacterProps> = ({
   const [showBreathingGuide, setShowBreathingGuide] = useState(false);
 
   // Old Tom's comfort responses based on emotional state
-  const comfortResponses: ComfortResponse[] = [
+  const comfortResponses: ComfortResponse[] = useMemo(() => [
     {
       type: 'reassurance',
       message: "I'm here with you, and everything is going to be okay. You're safe with me.",
@@ -76,7 +75,7 @@ export const OldTomComfortCharacter: React.FC<OldTomComfortCharacterProps> = ({
       message: "Sometimes gentle whale songs help me feel better. Shall we listen to some peaceful sounds?",
       childMessage: "Let's listen to gentle whale songs together. They always make me feel better!",
     }
-  ];
+  ], []);
 
   // Select appropriate response based on comfort level
   const selectComfortResponse = useCallback(() => {
@@ -216,7 +215,7 @@ export const OldTomComfortCharacter: React.FC<OldTomComfortCharacterProps> = ({
             </Typography>
             
             <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              {settings.simplifiedLanguage ? 'I'm here to help you feel better' : 'Here to provide comfort and support'}
+              {settings.simplifiedLanguage ? "I'm here to help you feel better" : 'Here to provide comfort and support'}
             </Typography>
           </CardContent>
         </Card>
@@ -294,7 +293,7 @@ export const OldTomComfortCharacter: React.FC<OldTomComfortCharacterProps> = ({
                       onComfortProvided();
                     }}
                   >
-                    {settings.simplifiedLanguage ? 'I feel better now' : 'I\'m feeling better, thanks'}
+                    {settings.simplifiedLanguage ? 'I feel better now' : "I'm feeling better, thanks"}
                   </Button>
                 </Box>
               </CardContent>
@@ -337,7 +336,7 @@ export const OldTomComfortCharacter: React.FC<OldTomComfortCharacterProps> = ({
                 <Typography variant="body1">
                   {settings.simplifiedLanguage 
                     ? 'Watch Old Tom grow and shrink. Breathe with him!'
-                    : 'Follow Old Tom\'s breathing rhythm. In... and out...'
+                    : "Follow Old Tom's breathing rhythm. In... and out..."
                   }
                 </Typography>
                 

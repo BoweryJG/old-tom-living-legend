@@ -150,4 +150,548 @@ class ConversationMemoryService {
     contextualMemory.shortTerm.push(memory);
     if (contextualMemory.shortTerm.length > this.maxShortTermMemory) {
       // Move important memories to long-term before removing
-      const removedMemory = contextualMemory.shortTerm.shift()!;\n      if (this.isImportantMemory(removedMemory)) {\n        this.moveToLongTermMemory(contextualMemory, removedMemory);\n      }\n    }\n\n    // Update session summary\n    this.updateSessionSummary(contextualMemory, memory);\n\n    // Update personal preferences\n    this.updatePersonalPreferences(contextualMemory, memory);\n\n    // Update relationship levels\n    this.updateRelationshipLevel(contextualMemory, memory);\n  }\n\n  private createNewContextualMemory(firstMemory: ConversationMemory): ContextualMemory {\n    return {\n      shortTerm: [firstMemory],\n      sessionSummary: {\n        startTime: Date.now(),\n        totalInteractions: 1,\n        dominantTopics: [firstMemory.sessionData.topicsDiscussed[0] || 'general'],\n        emotionalJourney: [firstMemory.userInput.emotion || 'neutral'],\n        learningProgress: {},\n        relationshipGrowth: 0\n      },\n      personalPreferences: {\n        favoriteTopics: [],\n        communicationStyle: firstMemory.userInput.inputMethod === 'voice' ? 'auditory' : 'visual',\n        attentionSpan: 'medium',\n        curiosityAreas: []\n      },\n      longTermMemory: {\n        importantMoments: [],\n        characterRelationships: { [firstMemory.characterId]: 1 },\n        knowledgeRetained: {},\n        personalGrowth: []\n      }\n    };\n  }\n\n  private updateSessionSummary(contextualMemory: ContextualMemory, memory: ConversationMemory): void {\n    const summary = contextualMemory.sessionSummary;\n    \n    summary.totalInteractions++;\n    \n    // Track topics\n    memory.sessionData.topicsDiscussed.forEach(topic => {\n      if (!summary.dominantTopics.includes(topic)) {\n        summary.dominantTopics.push(topic);\n      }\n    });\n    \n    // Track emotional journey\n    if (memory.userInput.emotion && !summary.emotionalJourney.includes(memory.userInput.emotion)) {\n      summary.emotionalJourney.push(memory.userInput.emotion);\n    }\n    \n    // Update learning progress\n    if (memory.learningObjectives) {\n      const topic = memory.learningObjectives.topic;\n      if (!summary.learningProgress[topic]) {\n        summary.learningProgress[topic] = 0;\n      }\n      if (memory.learningObjectives.achieved) {\n        summary.learningProgress[topic]++;\n      }\n    }\n    \n    summary.relationshipGrowth = memory.sessionData.relationshipLevel;\n  }\n\n  private updatePersonalPreferences(contextualMemory: ContextualMemory, memory: ConversationMemory): void {\n    const preferences = contextualMemory.personalPreferences;\n    \n    // Track favorite topics\n    memory.sessionData.topicsDiscussed.forEach(topic => {\n      if (!preferences.favoriteTopics.includes(topic)) {\n        preferences.favoriteTopics.push(topic);\n      }\n    });\n    \n    // Limit favorite topics to most recent/frequent\n    if (preferences.favoriteTopics.length > 10) {\n      preferences.favoriteTopics = preferences.favoriteTopics.slice(-10);\n    }\n    \n    // Update communication style based on usage patterns\n    const recentInteractions = contextualMemory.shortTerm.slice(-5);\n    const voiceCount = recentInteractions.filter(m => m.userInput.inputMethod === 'voice').length;\n    \n    if (voiceCount >= 3) {\n      preferences.communicationStyle = 'auditory';\n    } else if (voiceCount <= 1) {\n      preferences.communicationStyle = 'visual';\n    } else {\n      preferences.communicationStyle = 'interactive';\n    }\n    \n    // Estimate attention span based on interaction length\n    const avgResponseTime = recentInteractions.reduce((sum, m) => \n      sum + m.characterResponse.responseTime, 0) / recentInteractions.length;\n    \n    if (avgResponseTime < 2000) {\n      preferences.attentionSpan = 'short';\n    } else if (avgResponseTime > 5000) {\n      preferences.attentionSpan = 'long';\n    } else {\n      preferences.attentionSpan = 'medium';\n    }\n  }\n\n  private updateRelationshipLevel(contextualMemory: ContextualMemory, memory: ConversationMemory): void {\n    const characterId = memory.characterId;\n    const relationships = contextualMemory.longTermMemory.characterRelationships;\n    \n    if (!relationships[characterId]) {\n      relationships[characterId] = 0;\n    }\n    \n    // Increase relationship based on positive interactions\n    const positiveEmotions = ['happy', 'excited', 'curious', 'amazed'];\n    if (memory.userInput.emotion && positiveEmotions.includes(memory.userInput.emotion)) {\n      relationships[characterId] += 0.5;\n    }\n    \n    // Increase for educational achievement\n    if (memory.learningObjectives?.achieved) {\n      relationships[characterId] += 1;\n    }\n    \n    // Regular interaction bonus\n    relationships[characterId] += 0.1;\n    \n    // Cap at reasonable maximum\n    relationships[characterId] = Math.min(100, relationships[characterId]);\n  }\n\n  private isImportantMemory(memory: ConversationMemory): boolean {\n    // Criteria for important memories\n    return (\n      memory.learningObjectives?.achieved === true ||\n      memory.sessionData.relationshipLevel > 50 ||\n      memory.userInput.emotion === 'amazed' ||\n      memory.userInput.emotion === 'excited' ||\n      memory.sessionData.topicsDiscussed.some(topic => \n        ['friendship', 'ocean', 'whales', 'conservation'].includes(topic)\n      )\n    );\n  }\n\n  private moveToLongTermMemory(contextualMemory: ContextualMemory, memory: ConversationMemory): void {\n    contextualMemory.longTermMemory.importantMoments.push(memory);\n    \n    // Keep only most important long-term memories\n    if (contextualMemory.longTermMemory.importantMoments.length > this.maxLongTermMemory) {\n      contextualMemory.longTermMemory.importantMoments.sort((a, b) => {\n        return this.calculateMemoryImportance(b) - this.calculateMemoryImportance(a);\n      });\n      contextualMemory.longTermMemory.importantMoments = \n        contextualMemory.longTermMemory.importantMoments.slice(0, this.maxLongTermMemory);\n    }\n  }\n\n  private calculateMemoryImportance(memory: ConversationMemory): number {\n    let score = 0;\n    \n    // Learning achievement\n    if (memory.learningObjectives?.achieved) score += 10;\n    \n    // High relationship level\n    score += memory.sessionData.relationshipLevel * 0.1;\n    \n    // Positive emotions\n    const positiveEmotions = ['amazed', 'excited', 'happy', 'curious'];\n    if (memory.userInput.emotion && positiveEmotions.includes(memory.userInput.emotion)) {\n      score += 5;\n    }\n    \n    // Important topics\n    const importantTopics = ['friendship', 'ocean', 'whales', 'conservation', 'history'];\n    memory.sessionData.topicsDiscussed.forEach(topic => {\n      if (importantTopics.includes(topic)) score += 3;\n    });\n    \n    // Recency (more recent = slightly more important)\n    const ageInDays = (Date.now() - memory.timestamp) / (1000 * 60 * 60 * 24);\n    score += Math.max(0, 5 - ageInDays);\n    \n    return score;\n  }\n\n  private validateContentSafety(memory: ConversationMemory): boolean {\n    // Check for age-appropriate content\n    if (!memory.safetyFlags.contentAppropriate) {\n      return false;\n    }\n    \n    // Ensure educational value\n    if (!memory.safetyFlags.educationalValue) {\n      console.warn('Memory lacks educational value');\n    }\n    \n    // Check for emotional support\n    if (!memory.safetyFlags.emotionalSupport) {\n      console.warn('Memory may need emotional support review');\n    }\n    \n    // Validate response time (ensure not too quick or slow)\n    if (memory.characterResponse.responseTime < 500 || memory.characterResponse.responseTime > 30000) {\n      console.warn('Unusual response time detected');\n    }\n    \n    return true;\n  }\n\n  // Public API methods\n  public getConversationContext(participantId: string, characterId: string): any {\n    const contextualMemory = this.memories.get(participantId);\n    if (!contextualMemory) {\n      return this.getDefaultContext(characterId);\n    }\n\n    const characterRelationship = contextualMemory.longTermMemory.characterRelationships[characterId] || 0;\n    const recentTopics = contextualMemory.shortTerm.slice(-5)\n      .flatMap(m => m.sessionData.topicsDiscussed)\n      .filter((topic, index, arr) => arr.indexOf(topic) === index); // unique topics\n\n    return {\n      relationshipLevel: this.getRelationshipLabel(characterRelationship),\n      previousTopics: recentTopics,\n      personalPreferences: contextualMemory.personalPreferences,\n      emotionalState: contextualMemory.sessionSummary.emotionalJourney.slice(-3),\n      learningProgress: contextualMemory.sessionSummary.learningProgress,\n      conversationHistory: this.formatConversationHistory(contextualMemory.shortTerm.slice(-10)),\n      sessionInfo: {\n        startTime: contextualMemory.sessionSummary.startTime,\n        totalInteractions: contextualMemory.sessionSummary.totalInteractions,\n        sessionDuration: Date.now() - contextualMemory.sessionSummary.startTime\n      }\n    };\n  }\n\n  private getDefaultContext(characterId: string): any {\n    return {\n      relationshipLevel: 'stranger',\n      previousTopics: [],\n      personalPreferences: {\n        favoriteTopics: [],\n        communicationStyle: 'interactive',\n        attentionSpan: 'medium',\n        curiosityAreas: []\n      },\n      emotionalState: ['curious'],\n      learningProgress: {},\n      conversationHistory: [],\n      sessionInfo: {\n        startTime: Date.now(),\n        totalInteractions: 0,\n        sessionDuration: 0\n      }\n    };\n  }\n\n  private getRelationshipLabel(level: number): string {\n    if (level < 5) return 'stranger';\n    if (level < 15) return 'acquaintance';\n    if (level < 40) return 'friend';\n    return 'trusted_friend';\n  }\n\n  private formatConversationHistory(memories: ConversationMemory[]): any[] {\n    return memories.map(memory => ({\n      role: 'user',\n      content: memory.userInput.text,\n      emotion: memory.userInput.emotion,\n      timestamp: memory.timestamp\n    })).concat(\n      memories.map(memory => ({\n        role: 'assistant',\n        content: memory.characterResponse.text,\n        emotion: memory.characterResponse.emotion,\n        timestamp: memory.timestamp\n      }))\n    ).sort((a, b) => a.timestamp - b.timestamp);\n  }\n\n  public getPersonalizedRecommendations(participantId: string): {\n    suggestedTopics: string[];\n    learningObjectives: string[];\n    characterRecommendations: string[];\n  } {\n    const contextualMemory = this.memories.get(participantId);\n    if (!contextualMemory) {\n      return {\n        suggestedTopics: ['ocean basics', 'whale facts', 'friendship'],\n        learningObjectives: ['learn about marine life', 'understand cooperation'],\n        characterRecommendations: ['old-tom']\n      };\n    }\n\n    const preferences = contextualMemory.personalPreferences;\n    const learningProgress = contextualMemory.sessionSummary.learningProgress;\n\n    // Suggest new topics based on interests\n    const suggestedTopics = this.generateTopicRecommendations(preferences.favoriteTopics);\n    \n    // Learning objectives based on progress\n    const learningObjectives = this.generateLearningObjectives(learningProgress);\n    \n    // Character recommendations based on relationships\n    const characterRecommendations = this.generateCharacterRecommendations(\n      contextualMemory.longTermMemory.characterRelationships\n    );\n\n    return {\n      suggestedTopics,\n      learningObjectives,\n      characterRecommendations\n    };\n  }\n\n  private generateTopicRecommendations(favoriteTopics: string[]): string[] {\n    const topicExpansions: Record<string, string[]> = {\n      'whales': ['marine ecosystems', 'whale migration', 'whale communication'],\n      'ocean': ['tides', 'marine life', 'ocean conservation', 'underwater exploration'],\n      'friendship': ['teamwork', 'loyalty', 'trust', 'helping others'],\n      'history': ['maritime traditions', 'coastal communities', 'historical figures'],\n      'conservation': ['environmental protection', 'sustainable practices', 'wildlife preservation']\n    };\n\n    const suggestions: string[] = [];\n    favoriteTopics.forEach(topic => {\n      const expansions = topicExpansions[topic];\n      if (expansions) {\n        suggestions.push(...expansions);\n      }\n    });\n\n    return suggestions.slice(0, 5); // Return top 5 suggestions\n  }\n\n  private generateLearningObjectives(progress: Record<string, number>): string[] {\n    const objectives: string[] = [];\n    \n    // Basic objectives if just starting\n    if (Object.keys(progress).length === 0) {\n      return [\n        'Learn about Old Tom and George\\'s friendship',\n        'Discover marine life basics',\n        'Understand cooperation and teamwork'\n      ];\n    }\n\n    // Advanced objectives based on progress\n    Object.entries(progress).forEach(([topic, level]) => {\n      if (level < 3) {\n        objectives.push(`Continue exploring ${topic}`);\n      } else if (level >= 3) {\n        objectives.push(`Master advanced concepts in ${topic}`);\n      }\n    });\n\n    return objectives.slice(0, 4);\n  }\n\n  private generateCharacterRecommendations(relationships: Record<string, number>): string[] {\n    // Sort characters by relationship strength\n    const sortedRelationships = Object.entries(relationships)\n      .sort(([,a], [,b]) => b - a);\n\n    const recommendations: string[] = [];\n    \n    // Always include Old Tom as primary character\n    if (!relationships['old-tom'] || relationships['old-tom'] < 20) {\n      recommendations.push('old-tom');\n    }\n    \n    // Suggest George Davidson for historical context\n    if (!relationships['george-davidson'] || relationships['george-davidson'] < 15) {\n      recommendations.push('george-davidson');\n    }\n    \n    // Add child narrator for peer learning\n    if (!relationships['child-narrator'] || relationships['child-narrator'] < 10) {\n      recommendations.push('child-narrator');\n    }\n\n    return recommendations;\n  }\n\n  // Privacy and data management\n  public exportUserData(participantId: string): any {\n    const contextualMemory = this.memories.get(participantId);\n    if (!contextualMemory) {\n      return null;\n    }\n\n    return {\n      sessionSummary: contextualMemory.sessionSummary,\n      personalPreferences: contextualMemory.personalPreferences,\n      learningProgress: contextualMemory.sessionSummary.learningProgress,\n      relationshipLevels: contextualMemory.longTermMemory.characterRelationships,\n      exportDate: new Date().toISOString(),\n      dataRetentionInfo: this.privacySettings.dataRetention\n    };\n  }\n\n  public deleteUserData(participantId: string): boolean {\n    if (this.memories.has(participantId)) {\n      this.memories.delete(participantId);\n      \n      // Remove from session cache\n      for (const [sessionId, memories] of this.sessionCache.entries()) {\n        const filteredMemories = memories.filter(m => m.participantId !== participantId);\n        if (filteredMemories.length === 0) {\n          this.sessionCache.delete(sessionId);\n        } else {\n          this.sessionCache.set(sessionId, filteredMemories);\n        }\n      }\n      \n      return true;\n    }\n    return false;\n  }\n\n  private startCleanupScheduler(): void {\n    // Clean up expired data every hour\n    setInterval(() => {\n      this.cleanupExpiredData();\n    }, 60 * 60 * 1000); // 1 hour\n\n    // Initial cleanup\n    this.cleanupExpiredData();\n  }\n\n  private cleanupExpiredData(): void {\n    const now = Date.now();\n    const sessionRetentionMs = this.privacySettings.dataRetention.sessionMemory * 60 * 60 * 1000;\n    const personalDataRetentionMs = this.privacySettings.dataRetention.personalData * 24 * 60 * 60 * 1000;\n\n    // Clean session cache\n    for (const [sessionId, memories] of this.sessionCache.entries()) {\n      const validMemories = memories.filter(memory => \n        (now - memory.timestamp) < sessionRetentionMs\n      );\n      \n      if (validMemories.length === 0) {\n        this.sessionCache.delete(sessionId);\n      } else {\n        this.sessionCache.set(sessionId, validMemories);\n      }\n    }\n\n    // Clean personal data\n    for (const [participantId, contextualMemory] of this.memories.entries()) {\n      // Remove old short-term memories\n      contextualMemory.shortTerm = contextualMemory.shortTerm.filter(memory => \n        (now - memory.timestamp) < sessionRetentionMs\n      );\n      \n      // Remove old long-term memories based on personal data retention\n      contextualMemory.longTermMemory.importantMoments = \n        contextualMemory.longTermMemory.importantMoments.filter(memory => \n          (now - memory.timestamp) < personalDataRetentionMs\n        );\n      \n      // Remove entire contextual memory if empty\n      if (contextualMemory.shortTerm.length === 0 && \n          contextualMemory.longTermMemory.importantMoments.length === 0) {\n        this.memories.delete(participantId);\n      }\n    }\n  }\n\n  private generateMemoryId(): string {\n    return `mem_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n  }\n\n  // Analytics and insights (aggregated, privacy-safe)\n  public getAggregatedInsights(): {\n    totalSessions: number;\n    averageSessionLength: number;\n    popularTopics: string[];\n    learningEffectiveness: number;\n    characterPopularity: Record<string, number>;\n  } {\n    const allMemories = Array.from(this.memories.values());\n    \n    if (allMemories.length === 0) {\n      return {\n        totalSessions: 0,\n        averageSessionLength: 0,\n        popularTopics: [],\n        learningEffectiveness: 0,\n        characterPopularity: {}\n      };\n    }\n\n    const totalSessions = allMemories.length;\n    const averageSessionLength = allMemories.reduce((sum, memory) => \n      sum + (Date.now() - memory.sessionSummary.startTime), 0\n    ) / totalSessions;\n\n    // Aggregate popular topics\n    const topicCounts: Record<string, number> = {};\n    allMemories.forEach(memory => {\n      memory.sessionSummary.dominantTopics.forEach(topic => {\n        topicCounts[topic] = (topicCounts[topic] || 0) + 1;\n      });\n    });\n    \n    const popularTopics = Object.entries(topicCounts)\n      .sort(([,a], [,b]) => b - a)\n      .slice(0, 5)\n      .map(([topic]) => topic);\n\n    // Calculate learning effectiveness\n    const totalLearningAchievements = allMemories.reduce((sum, memory) => \n      sum + Object.values(memory.sessionSummary.learningProgress).reduce((a, b) => a + b, 0), 0\n    );\n    const learningEffectiveness = totalLearningAchievements / totalSessions;\n\n    // Character popularity\n    const characterCounts: Record<string, number> = {};\n    allMemories.forEach(memory => {\n      Object.keys(memory.longTermMemory.characterRelationships).forEach(character => {\n        characterCounts[character] = (characterCounts[character] || 0) + 1;\n      });\n    });\n\n    return {\n      totalSessions,\n      averageSessionLength: averageSessionLength / 1000 / 60, // Convert to minutes\n      popularTopics,\n      learningEffectiveness,\n      characterPopularity: characterCounts\n    };\n  }\n}\n\nexport const conversationMemoryService = new ConversationMemoryService();\nexport default ConversationMemoryService;
+      const removedMemory = contextualMemory.shortTerm.shift()!;
+      if (this.isImportantMemory(removedMemory)) {
+        this.moveToLongTermMemory(contextualMemory, removedMemory);
+      }
+    }
+
+    // Update session summary
+    this.updateSessionSummary(contextualMemory, memory);
+
+    // Update personal preferences
+    this.updatePersonalPreferences(contextualMemory, memory);
+
+    // Update relationship levels
+    this.updateRelationshipLevel(contextualMemory, memory);
+  }
+
+  private createNewContextualMemory(firstMemory: ConversationMemory): ContextualMemory {
+    return {
+      shortTerm: [firstMemory],
+      sessionSummary: {
+        startTime: Date.now(),
+        totalInteractions: 1,
+        dominantTopics: [firstMemory.sessionData.topicsDiscussed[0] || 'general'],
+        emotionalJourney: [firstMemory.userInput.emotion || 'neutral'],
+        learningProgress: {},
+        relationshipGrowth: 0
+      },
+      personalPreferences: {
+        favoriteTopics: [],
+        communicationStyle: firstMemory.userInput.inputMethod === 'voice' ? 'auditory' : 'visual',
+        attentionSpan: 'medium',
+        curiosityAreas: []
+      },
+      longTermMemory: {
+        importantMoments: [],
+        characterRelationships: { [firstMemory.characterId]: 1 },
+        knowledgeRetained: {},
+        personalGrowth: []
+      }
+    };
+  }
+
+  private updateSessionSummary(contextualMemory: ContextualMemory, memory: ConversationMemory): void {
+    const summary = contextualMemory.sessionSummary;
+    
+    summary.totalInteractions++;
+    
+    // Track topics
+    memory.sessionData.topicsDiscussed.forEach(topic => {
+      if (!summary.dominantTopics.includes(topic)) {
+        summary.dominantTopics.push(topic);
+      }
+    });
+    
+    // Track emotional journey
+    if (memory.userInput.emotion && !summary.emotionalJourney.includes(memory.userInput.emotion)) {
+      summary.emotionalJourney.push(memory.userInput.emotion);
+    }
+    
+    // Update learning progress
+    if (memory.learningObjectives) {
+      const topic = memory.learningObjectives.topic;
+      if (!summary.learningProgress[topic]) {
+        summary.learningProgress[topic] = 0;
+      }
+      if (memory.learningObjectives.achieved) {
+        summary.learningProgress[topic]++;
+      }
+    }
+    
+    summary.relationshipGrowth = memory.sessionData.relationshipLevel;
+  }
+
+  private updatePersonalPreferences(contextualMemory: ContextualMemory, memory: ConversationMemory): void {
+    const preferences = contextualMemory.personalPreferences;
+    
+    // Track favorite topics
+    memory.sessionData.topicsDiscussed.forEach(topic => {
+      if (!preferences.favoriteTopics.includes(topic)) {
+        preferences.favoriteTopics.push(topic);
+      }
+    });
+    
+    // Limit favorite topics to most recent/frequent
+    if (preferences.favoriteTopics.length > 10) {
+      preferences.favoriteTopics = preferences.favoriteTopics.slice(-10);
+    }
+    
+    // Update communication style based on usage patterns
+    const recentInteractions = contextualMemory.shortTerm.slice(-5);
+    const voiceCount = recentInteractions.filter(m => m.userInput.inputMethod === 'voice').length;
+    
+    if (voiceCount >= 3) {
+      preferences.communicationStyle = 'auditory';
+    } else if (voiceCount <= 1) {
+      preferences.communicationStyle = 'visual';
+    } else {
+      preferences.communicationStyle = 'interactive';
+    }
+    
+    // Estimate attention span based on interaction length
+    const avgResponseTime = recentInteractions.reduce((sum, m) => 
+      sum + m.characterResponse.responseTime, 0) / recentInteractions.length;
+    
+    if (avgResponseTime < 2000) {
+      preferences.attentionSpan = 'short';
+    } else if (avgResponseTime > 5000) {
+      preferences.attentionSpan = 'long';
+    } else {
+      preferences.attentionSpan = 'medium';
+    }
+  }
+
+  private updateRelationshipLevel(contextualMemory: ContextualMemory, memory: ConversationMemory): void {
+    const characterId = memory.characterId;
+    const relationships = contextualMemory.longTermMemory.characterRelationships;
+    
+    if (!relationships[characterId]) {
+      relationships[characterId] = 0;
+    }
+    
+    // Increase relationship based on positive interactions
+    const positiveEmotions = ['happy', 'excited', 'curious', 'amazed'];
+    if (memory.userInput.emotion && positiveEmotions.includes(memory.userInput.emotion)) {
+      relationships[characterId] += 0.5;
+    }
+    
+    // Increase for educational achievement
+    if (memory.learningObjectives?.achieved) {
+      relationships[characterId] += 1;
+    }
+    
+    // Regular interaction bonus
+    relationships[characterId] += 0.1;
+    
+    // Cap at reasonable maximum
+    relationships[characterId] = Math.min(100, relationships[characterId]);
+  }
+
+  private isImportantMemory(memory: ConversationMemory): boolean {
+    // Criteria for important memories
+    return (
+      memory.learningObjectives?.achieved === true ||
+      memory.sessionData.relationshipLevel > 50 ||
+      memory.userInput.emotion === 'amazed' ||
+      memory.userInput.emotion === 'excited' ||
+      memory.sessionData.topicsDiscussed.some(topic => 
+        ['friendship', 'ocean', 'whales', 'conservation'].includes(topic)
+      )
+    );
+  }
+
+  private moveToLongTermMemory(contextualMemory: ContextualMemory, memory: ConversationMemory): void {
+    contextualMemory.longTermMemory.importantMoments.push(memory);
+    
+    // Keep only most important long-term memories
+    if (contextualMemory.longTermMemory.importantMoments.length > this.maxLongTermMemory) {
+      contextualMemory.longTermMemory.importantMoments.sort((a, b) => {
+        return this.calculateMemoryImportance(b) - this.calculateMemoryImportance(a);
+      });
+      contextualMemory.longTermMemory.importantMoments = 
+        contextualMemory.longTermMemory.importantMoments.slice(0, this.maxLongTermMemory);
+    }
+  }
+
+  private calculateMemoryImportance(memory: ConversationMemory): number {
+    let score = 0;
+    
+    // Learning achievement
+    if (memory.learningObjectives?.achieved) score += 10;
+    
+    // High relationship level
+    score += memory.sessionData.relationshipLevel * 0.1;
+    
+    // Positive emotions
+    const positiveEmotions = ['amazed', 'excited', 'happy', 'curious'];
+    if (memory.userInput.emotion && positiveEmotions.includes(memory.userInput.emotion)) {
+      score += 5;
+    }
+    
+    // Important topics
+    const importantTopics = ['friendship', 'ocean', 'whales', 'conservation', 'history'];
+    memory.sessionData.topicsDiscussed.forEach(topic => {
+      if (importantTopics.includes(topic)) score += 3;
+    });
+    
+    // Recency (more recent = slightly more important)
+    const ageInDays = (Date.now() - memory.timestamp) / (1000 * 60 * 60 * 24);
+    score += Math.max(0, 5 - ageInDays);
+    
+    return score;
+  }
+
+  private validateContentSafety(memory: ConversationMemory): boolean {
+    // Check for age-appropriate content
+    if (!memory.safetyFlags.contentAppropriate) {
+      return false;
+    }
+    
+    // Ensure educational value
+    if (!memory.safetyFlags.educationalValue) {
+      console.warn('Memory lacks educational value');
+    }
+    
+    // Check for emotional support
+    if (!memory.safetyFlags.emotionalSupport) {
+      console.warn('Memory may need emotional support review');
+    }
+    
+    // Validate response time (ensure not too quick or slow)
+    if (memory.characterResponse.responseTime < 500 || memory.characterResponse.responseTime > 30000) {
+      console.warn('Unusual response time detected');
+    }
+    
+    return true;
+  }
+
+  // Public API methods
+  public getConversationContext(participantId: string, characterId: string): any {
+    const contextualMemory = this.memories.get(participantId);
+    if (!contextualMemory) {
+      return this.getDefaultContext(characterId);
+    }
+
+    const characterRelationship = contextualMemory.longTermMemory.characterRelationships[characterId] || 0;
+    const recentTopics = contextualMemory.shortTerm.slice(-5)
+      .flatMap(m => m.sessionData.topicsDiscussed)
+      .filter((topic, index, arr) => arr.indexOf(topic) === index); // unique topics
+
+    return {
+      relationshipLevel: this.getRelationshipLabel(characterRelationship),
+      previousTopics: recentTopics,
+      personalPreferences: contextualMemory.personalPreferences,
+      emotionalState: contextualMemory.sessionSummary.emotionalJourney.slice(-3),
+      learningProgress: contextualMemory.sessionSummary.learningProgress,
+      conversationHistory: this.formatConversationHistory(contextualMemory.shortTerm.slice(-10)),
+      sessionInfo: {
+        startTime: contextualMemory.sessionSummary.startTime,
+        totalInteractions: contextualMemory.sessionSummary.totalInteractions,
+        sessionDuration: Date.now() - contextualMemory.sessionSummary.startTime
+      }
+    };
+  }
+
+  private getDefaultContext(characterId: string): any {
+    return {
+      relationshipLevel: 'stranger',
+      previousTopics: [],
+      personalPreferences: {
+        favoriteTopics: [],
+        communicationStyle: 'interactive',
+        attentionSpan: 'medium',
+        curiosityAreas: []
+      },
+      emotionalState: ['curious'],
+      learningProgress: {},
+      conversationHistory: [],
+      sessionInfo: {
+        startTime: Date.now(),
+        totalInteractions: 0,
+        sessionDuration: 0
+      }
+    };
+  }
+
+  private getRelationshipLabel(level: number): string {
+    if (level < 5) return 'stranger';
+    if (level < 15) return 'acquaintance';
+    if (level < 40) return 'friend';
+    return 'trusted_friend';
+  }
+
+  private formatConversationHistory(memories: ConversationMemory[]): any[] {
+    return memories.map(memory => ({
+      role: 'user',
+      content: memory.userInput.text,
+      emotion: memory.userInput.emotion,
+      timestamp: memory.timestamp
+    })).concat(
+      memories.map(memory => ({
+        role: 'assistant',
+        content: memory.characterResponse.text,
+        emotion: memory.characterResponse.emotion,
+        timestamp: memory.timestamp
+      }))
+    ).sort((a, b) => a.timestamp - b.timestamp);
+  }
+
+  public getPersonalizedRecommendations(participantId: string): {
+    suggestedTopics: string[];
+    learningObjectives: string[];
+    characterRecommendations: string[];
+  } {
+    const contextualMemory = this.memories.get(participantId);
+    if (!contextualMemory) {
+      return {
+        suggestedTopics: ['ocean basics', 'whale facts', 'friendship'],
+        learningObjectives: ['learn about marine life', 'understand cooperation'],
+        characterRecommendations: ['old-tom']
+      };
+    }
+
+    const preferences = contextualMemory.personalPreferences;
+    const learningProgress = contextualMemory.sessionSummary.learningProgress;
+
+    // Suggest new topics based on interests
+    const suggestedTopics = this.generateTopicRecommendations(preferences.favoriteTopics);
+    
+    // Learning objectives based on progress
+    const learningObjectives = this.generateLearningObjectives(learningProgress);
+    
+    // Character recommendations based on relationships
+    const characterRecommendations = this.generateCharacterRecommendations(
+      contextualMemory.longTermMemory.characterRelationships
+    );
+
+    return {
+      suggestedTopics,
+      learningObjectives,
+      characterRecommendations
+    };
+  }
+
+  private generateTopicRecommendations(favoriteTopics: string[]): string[] {
+    const topicExpansions: Record<string, string[]> = {
+      'whales': ['marine ecosystems', 'whale migration', 'whale communication'],
+      'ocean': ['tides', 'marine life', 'ocean conservation', 'underwater exploration'],
+      'friendship': ['teamwork', 'loyalty', 'trust', 'helping others'],
+      'history': ['maritime traditions', 'coastal communities', 'historical figures'],
+      'conservation': ['environmental protection', 'sustainable practices', 'wildlife preservation']
+    };
+
+    const suggestions: string[] = [];
+    favoriteTopics.forEach(topic => {
+      const expansions = topicExpansions[topic];
+      if (expansions) {
+        suggestions.push(...expansions);
+      }
+    });
+
+    return suggestions.slice(0, 5); // Return top 5 suggestions
+  }
+
+  private generateLearningObjectives(progress: Record<string, number>): string[] {
+    const objectives: string[] = [];
+    
+    // Basic objectives if just starting
+    if (Object.keys(progress).length === 0) {
+      return [
+        'Learn about Old Tom and George\'s friendship',
+        'Discover marine life basics',
+        'Understand cooperation and teamwork'
+      ];
+    }
+
+    // Advanced objectives based on progress
+    Object.entries(progress).forEach(([topic, level]) => {
+      if (level < 3) {
+        objectives.push(`Continue exploring ${topic}`);
+      } else if (level >= 3) {
+        objectives.push(`Master advanced concepts in ${topic}`);
+      }
+    });
+
+    return objectives.slice(0, 4);
+  }
+
+  private generateCharacterRecommendations(relationships: Record<string, number>): string[] {
+    // Sort characters by relationship strength
+    const sortedRelationships = Object.entries(relationships)
+      .sort(([,a], [,b]) => b - a);
+
+    const recommendations: string[] = [];
+    
+    // Always include Old Tom as primary character
+    if (!relationships['old-tom'] || relationships['old-tom'] < 20) {
+      recommendations.push('old-tom');
+    }
+    
+    // Suggest George Davidson for historical context
+    if (!relationships['george-davidson'] || relationships['george-davidson'] < 15) {
+      recommendations.push('george-davidson');
+    }
+    
+    // Add child narrator for peer learning
+    if (!relationships['child-narrator'] || relationships['child-narrator'] < 10) {
+      recommendations.push('child-narrator');
+    }
+
+    return recommendations;
+  }
+
+  // Privacy and data management
+  public exportUserData(participantId: string): any {
+    const contextualMemory = this.memories.get(participantId);
+    if (!contextualMemory) {
+      return null;
+    }
+
+    return {
+      sessionSummary: contextualMemory.sessionSummary,
+      personalPreferences: contextualMemory.personalPreferences,
+      learningProgress: contextualMemory.sessionSummary.learningProgress,
+      relationshipLevels: contextualMemory.longTermMemory.characterRelationships,
+      exportDate: new Date().toISOString(),
+      dataRetentionInfo: this.privacySettings.dataRetention
+    };
+  }
+
+  public deleteUserData(participantId: string): boolean {
+    if (this.memories.has(participantId)) {
+      this.memories.delete(participantId);
+      
+      // Remove from session cache
+      for (const [sessionId, memories] of this.sessionCache.entries()) {
+        const filteredMemories = memories.filter(m => m.participantId !== participantId);
+        if (filteredMemories.length === 0) {
+          this.sessionCache.delete(sessionId);
+        } else {
+          this.sessionCache.set(sessionId, filteredMemories);
+        }
+      }
+      
+      return true;
+    }
+    return false;
+  }
+
+  private startCleanupScheduler(): void {
+    // Clean up expired data every hour
+    setInterval(() => {
+      this.cleanupExpiredData();
+    }, 60 * 60 * 1000); // 1 hour
+
+    // Initial cleanup
+    this.cleanupExpiredData();
+  }
+
+  private cleanupExpiredData(): void {
+    const now = Date.now();
+    const sessionRetentionMs = this.privacySettings.dataRetention.sessionMemory * 60 * 60 * 1000;
+    const personalDataRetentionMs = this.privacySettings.dataRetention.personalData * 24 * 60 * 60 * 1000;
+
+    // Clean session cache
+    for (const [sessionId, memories] of this.sessionCache.entries()) {
+      const validMemories = memories.filter(memory => 
+        (now - memory.timestamp) < sessionRetentionMs
+      );
+      
+      if (validMemories.length === 0) {
+        this.sessionCache.delete(sessionId);
+      } else {
+        this.sessionCache.set(sessionId, validMemories);
+      }
+    }
+
+    // Clean personal data
+    for (const [participantId, contextualMemory] of this.memories.entries()) {
+      // Remove old short-term memories
+      contextualMemory.shortTerm = contextualMemory.shortTerm.filter(memory => 
+        (now - memory.timestamp) < sessionRetentionMs
+      );
+      
+      // Remove old long-term memories based on personal data retention
+      contextualMemory.longTermMemory.importantMoments = 
+        contextualMemory.longTermMemory.importantMoments.filter(memory => 
+          (now - memory.timestamp) < personalDataRetentionMs
+        );
+      
+      // Remove entire contextual memory if empty
+      if (contextualMemory.shortTerm.length === 0 && 
+          contextualMemory.longTermMemory.importantMoments.length === 0) {
+        this.memories.delete(participantId);
+      }
+    }
+  }
+
+  private generateMemoryId(): string {
+    return `mem_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // Analytics and insights (aggregated, privacy-safe)
+  public getAggregatedInsights(): {
+    totalSessions: number;
+    averageSessionLength: number;
+    popularTopics: string[];
+    learningEffectiveness: number;
+    characterPopularity: Record<string, number>;
+  } {
+    const allMemories = Array.from(this.memories.values());
+    
+    if (allMemories.length === 0) {
+      return {
+        totalSessions: 0,
+        averageSessionLength: 0,
+        popularTopics: [],
+        learningEffectiveness: 0,
+        characterPopularity: {}
+      };
+    }
+
+    const totalSessions = allMemories.length;
+    const averageSessionLength = allMemories.reduce((sum, memory) => 
+      sum + (Date.now() - memory.sessionSummary.startTime), 0
+    ) / totalSessions;
+
+    // Aggregate popular topics
+    const topicCounts: Record<string, number> = {};
+    allMemories.forEach(memory => {
+      memory.sessionSummary.dominantTopics.forEach(topic => {
+        topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+      });
+    });
+    
+    const popularTopics = Object.entries(topicCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+      .map(([topic]) => topic);
+
+    // Calculate learning effectiveness
+    const totalLearningAchievements = allMemories.reduce((sum, memory) => 
+      sum + Object.values(memory.sessionSummary.learningProgress).reduce((a, b) => a + b, 0), 0
+    );
+    const learningEffectiveness = totalLearningAchievements / totalSessions;
+
+    // Character popularity
+    const characterCounts: Record<string, number> = {};
+    allMemories.forEach(memory => {
+      Object.keys(memory.longTermMemory.characterRelationships).forEach(character => {
+        characterCounts[character] = (characterCounts[character] || 0) + 1;
+      });
+    });
+
+    return {
+      totalSessions,
+      averageSessionLength: averageSessionLength / 1000 / 60, // Convert to minutes
+      popularTopics,
+      learningEffectiveness,
+      characterPopularity: characterCounts
+    };
+  }
+}
+
+export const conversationMemoryService = new ConversationMemoryService();
+export default ConversationMemoryService;

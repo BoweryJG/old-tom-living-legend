@@ -1,1 +1,795 @@
-interface PrivacySettings {\n  dataCollection: {\n    voiceRecording: boolean;\n    textInput: boolean;\n    behavioralAnalytics: boolean;\n    emotionalAnalysis: boolean;\n    learningProgress: boolean;\n  };\n  dataRetention: {\n    sessionData: number; // hours\n    personalPreferences: number; // days\n    learningProgress: number; // days\n    conversationHistory: number; // days\n  };\n  dataSharing: {\n    thirdPartyAnalytics: boolean;\n    educationalResearch: boolean;\n    productImprovement: boolean;\n  };\n  parentalControls: {\n    consentRequired: boolean;\n    accessToData: boolean;\n    deletionRights: boolean;\n    activityReports: boolean;\n  };\n}\n\ninterface DataProcessingConsent {\n  userId: string;\n  timestamp: number;\n  consentGiven: boolean;\n  consentVersion: string;\n  parentalConsent?: {\n    given: boolean;\n    parentEmail: string;\n    verificationMethod: string;\n    timestamp: number;\n  };\n  specificConsents: {\n    voiceProcessing: boolean;\n    emotionalAnalysis: boolean;\n    learningTracking: boolean;\n    dataRetention: boolean;\n  };\n}\n\ninterface DataExportRequest {\n  userId: string;\n  requestTimestamp: number;\n  parentalRequest: boolean;\n  requestorEmail: string;\n  dataTypes: string[];\n  status: 'pending' | 'approved' | 'completed' | 'denied';\n  completionTimestamp?: number;\n}\n\ninterface DataDeletionRequest {\n  userId: string;\n  requestTimestamp: number;\n  parentalRequest: boolean;\n  requestorEmail: string;\n  deletionScope: 'partial' | 'complete';\n  specificData?: string[];\n  status: 'pending' | 'approved' | 'completed' | 'denied';\n  completionTimestamp?: number;\n  verificationRequired: boolean;\n}\n\ninterface PrivacyAuditLog {\n  timestamp: number;\n  userId: string;\n  action: string;\n  dataType: string;\n  details: string;\n  ipAddress?: string;\n  userAgent?: string;\n}\n\nclass PrivacyService {\n  private privacySettings: PrivacySettings;\n  private userConsents: Map<string, DataProcessingConsent> = new Map();\n  private exportRequests: Map<string, DataExportRequest> = new Map();\n  private deletionRequests: Map<string, DataDeletionRequest> = new Map();\n  private auditLog: PrivacyAuditLog[] = [];\n  private encryptionKey: string;\n  private dataProcessors: Map<string, any> = new Map();\n\n  constructor() {\n    this.privacySettings = this.getDefaultPrivacySettings();\n    this.encryptionKey = this.generateEncryptionKey();\n    this.initializeDataProcessors();\n    this.startAuditLogCleanup();\n  }\n\n  private getDefaultPrivacySettings(): PrivacySettings {\n    return {\n      dataCollection: {\n        voiceRecording: false, // Requires explicit consent\n        textInput: true,       // Minimal data collection\n        behavioralAnalytics: false, // Requires consent\n        emotionalAnalysis: false,   // Requires consent\n        learningProgress: true      // Educational purpose\n      },\n      dataRetention: {\n        sessionData: 24,        // 24 hours\n        personalPreferences: 7, // 7 days\n        learningProgress: 30,   // 30 days\n        conversationHistory: 7  // 7 days\n      },\n      dataSharing: {\n        thirdPartyAnalytics: false,\n        educationalResearch: false,\n        productImprovement: false\n      },\n      parentalControls: {\n        consentRequired: true,\n        accessToData: true,\n        deletionRights: true,\n        activityReports: true\n      }\n    };\n  }\n\n  private generateEncryptionKey(): string {\n    // In production, this would use a proper key management system\n    return 'privacy_encryption_key_' + Date.now();\n  }\n\n  private initializeDataProcessors() {\n    // Initialize data anonymization and encryption processors\n    this.dataProcessors.set('anonymizer', {\n      process: (data: any) => this.anonymizeData(data),\n      reversible: false\n    });\n\n    this.dataProcessors.set('encryptor', {\n      process: (data: any) => this.encryptData(data),\n      reversible: true\n    });\n\n    this.dataProcessors.set('hasher', {\n      process: (data: any) => this.hashSensitiveData(data),\n      reversible: false\n    });\n  }\n\n  // Consent Management\n  public async requestConsent(\n    userId: string,\n    childAge: number,\n    requiredConsents: string[],\n    parentEmail?: string\n  ): Promise<{ \n    consentRequired: boolean;\n    parentalConsentRequired: boolean;\n    consentUrl?: string;\n    temporaryPermissions: string[];\n  }> {\n    const requiresParentalConsent = childAge < 13; // COPPA compliance\n    \n    // Check existing consent\n    const existingConsent = this.userConsents.get(userId);\n    if (existingConsent && this.isConsentValid(existingConsent)) {\n      return {\n        consentRequired: false,\n        parentalConsentRequired: false,\n        temporaryPermissions: this.getPermittedDataTypes(existingConsent)\n      };\n    }\n\n    // Generate consent request\n    const consentRequest = {\n      userId,\n      requiredConsents,\n      parentalConsentRequired: requiresParentalConsent,\n      parentEmail,\n      timestamp: Date.now()\n    };\n\n    // Log consent request\n    this.logPrivacyAction(userId, 'consent_requested', 'user_data', \n      `Consent requested for: ${requiredConsents.join(', ')}`);\n\n    return {\n      consentRequired: true,\n      parentalConsentRequired: requiresParentalConsent,\n      consentUrl: this.generateConsentUrl(consentRequest),\n      temporaryPermissions: ['basic_interaction'] // Minimal permissions while consent pending\n    };\n  }\n\n  public async recordConsent(\n    userId: string,\n    consentData: {\n      voiceProcessing: boolean;\n      emotionalAnalysis: boolean;\n      learningTracking: boolean;\n      dataRetention: boolean;\n    },\n    parentalConsent?: {\n      parentEmail: string;\n      verificationCode: string;\n      consentGiven: boolean;\n    }\n  ): Promise<{ success: boolean; error?: string }> {\n    try {\n      const consent: DataProcessingConsent = {\n        userId,\n        timestamp: Date.now(),\n        consentGiven: true,\n        consentVersion: '1.0',\n        specificConsents: consentData\n      };\n\n      // Handle parental consent if provided\n      if (parentalConsent) {\n        if (!this.verifyParentalConsent(parentalConsent)) {\n          return { success: false, error: 'Parental consent verification failed' };\n        }\n        \n        consent.parentalConsent = {\n          given: parentalConsent.consentGiven,\n          parentEmail: parentalConsent.parentEmail,\n          verificationMethod: 'email_verification',\n          timestamp: Date.now()\n        };\n      }\n\n      // Store consent\n      this.userConsents.set(userId, consent);\n\n      // Update privacy settings based on consent\n      this.updatePrivacySettingsFromConsent(userId, consent);\n\n      // Log consent recording\n      this.logPrivacyAction(userId, 'consent_recorded', 'consent_data', \n        `Consent recorded with parental approval: ${!!parentalConsent}`);\n\n      return { success: true };\n    } catch (error) {\n      console.error('Error recording consent:', error);\n      return { success: false, error: 'Failed to record consent' };\n    }\n  }\n\n  public revokeConsent(userId: string): boolean {\n    try {\n      const existingConsent = this.userConsents.get(userId);\n      if (existingConsent) {\n        existingConsent.consentGiven = false;\n        existingConsent.timestamp = Date.now();\n        this.userConsents.set(userId, existingConsent);\n        \n        // Trigger data deletion for non-essential data\n        this.scheduleDataDeletion(userId, ['voice_data', 'emotional_analysis', 'behavioral_data']);\n        \n        this.logPrivacyAction(userId, 'consent_revoked', 'consent_data', 'User revoked consent');\n        return true;\n      }\n      return false;\n    } catch (error) {\n      console.error('Error revoking consent:', error);\n      return false;\n    }\n  }\n\n  // Data Processing and Protection\n  public async processUserData(\n    userId: string,\n    dataType: string,\n    data: any,\n    purpose: string\n  ): Promise<{ processed: boolean; processedData?: any; error?: string }> {\n    try {\n      // Check consent\n      if (!this.hasConsentForDataType(userId, dataType)) {\n        return { \n          processed: false, \n          error: `No consent for ${dataType} processing` \n        };\n      }\n\n      // Apply privacy-preserving processing\n      let processedData = data;\n\n      // Anonymize if required\n      if (this.requiresAnonymization(dataType)) {\n        processedData = this.anonymizeData(processedData);\n      }\n\n      // Encrypt sensitive data\n      if (this.isSensitiveData(dataType)) {\n        processedData = this.encryptData(processedData);\n      }\n\n      // Hash identifiable information\n      if (this.containsPersonalIdentifiers(processedData)) {\n        processedData = this.hashSensitiveData(processedData);\n      }\n\n      // Log data processing\n      this.logPrivacyAction(userId, 'data_processed', dataType, \n        `Data processed for purpose: ${purpose}`);\n\n      // Schedule deletion based on retention policy\n      this.scheduleDataDeletion(userId, [dataType], this.getRetentionPeriod(dataType));\n\n      return { processed: true, processedData };\n    } catch (error) {\n      console.error('Error processing user data:', error);\n      return { processed: false, error: 'Data processing failed' };\n    }\n  }\n\n  private anonymizeData(data: any): any {\n    if (typeof data === 'string') {\n      // Remove or replace personal identifiers\n      return data\n        .replace(/\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b/g, '[EMAIL]')\n        .replace(/\\b\\d{3}-\\d{3}-\\d{4}\\b/g, '[PHONE]')\n        .replace(/\\b\\d{3}-\\d{2}-\\d{4}\\b/g, '[SSN]')\n        .replace(/\\b[A-Z][a-z]+ [A-Z][a-z]+\\b/g, '[NAME]');\n    }\n    \n    if (typeof data === 'object' && data !== null) {\n      const anonymized = { ...data };\n      \n      // Remove direct identifiers\n      delete anonymized.name;\n      delete anonymized.email;\n      delete anonymized.phone;\n      delete anonymized.address;\n      \n      // Replace with anonymized versions\n      if (data.userId) {\n        anonymized.userId = this.hashString(data.userId);\n      }\n      \n      return anonymized;\n    }\n    \n    return data;\n  }\n\n  private encryptData(data: any): string {\n    // Simple encryption for demo - use proper encryption in production\n    const dataString = JSON.stringify(data);\n    return btoa(dataString + this.encryptionKey);\n  }\n\n  private decryptData(encryptedData: string): any {\n    try {\n      const decrypted = atob(encryptedData);\n      const dataString = decrypted.replace(this.encryptionKey, '');\n      return JSON.parse(dataString);\n    } catch (error) {\n      console.error('Decryption failed:', error);\n      return null;\n    }\n  }\n\n  private hashSensitiveData(data: any): any {\n    if (typeof data === 'object' && data !== null) {\n      const hashed = { ...data };\n      \n      // Hash specific fields that might contain sensitive info\n      if (data.sessionId) {\n        hashed.sessionId = this.hashString(data.sessionId);\n      }\n      \n      if (data.voiceData) {\n        hashed.voiceData = this.hashString(JSON.stringify(data.voiceData));\n      }\n      \n      return hashed;\n    }\n    \n    return data;\n  }\n\n  private hashString(input: string): string {\n    // Simple hash function for demo - use proper hashing in production\n    let hash = 0;\n    for (let i = 0; i < input.length; i++) {\n      const char = input.charCodeAt(i);\n      hash = ((hash << 5) - hash) + char;\n      hash = hash & hash; // Convert to 32-bit integer\n    }\n    return hash.toString(36);\n  }\n\n  // Data Rights Management\n  public async requestDataExport(\n    userId: string,\n    requestorEmail: string,\n    parentalRequest: boolean = false\n  ): Promise<{ success: boolean; requestId?: string; error?: string }> {\n    try {\n      const requestId = `export_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n      \n      const exportRequest: DataExportRequest = {\n        userId,\n        requestTimestamp: Date.now(),\n        parentalRequest,\n        requestorEmail,\n        dataTypes: ['conversations', 'preferences', 'learning_progress', 'consent_records'],\n        status: 'pending'\n      };\n      \n      this.exportRequests.set(requestId, exportRequest);\n      \n      // Log the request\n      this.logPrivacyAction(userId, 'data_export_requested', 'user_data', \n        `Data export requested by ${parentalRequest ? 'parent' : 'user'}`);\n      \n      // Schedule processing (in production, this would trigger an async process)\n      setTimeout(() => {\n        this.processDataExportRequest(requestId);\n      }, 1000);\n      \n      return { success: true, requestId };\n    } catch (error) {\n      console.error('Error requesting data export:', error);\n      return { success: false, error: 'Failed to submit export request' };\n    }\n  }\n\n  public async requestDataDeletion(\n    userId: string,\n    requestorEmail: string,\n    deletionScope: 'partial' | 'complete',\n    specificData?: string[],\n    parentalRequest: boolean = false\n  ): Promise<{ success: boolean; requestId?: string; error?: string }> {\n    try {\n      const requestId = `deletion_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n      \n      const deletionRequest: DataDeletionRequest = {\n        userId,\n        requestTimestamp: Date.now(),\n        parentalRequest,\n        requestorEmail,\n        deletionScope,\n        specificData,\n        status: 'pending',\n        verificationRequired: true\n      };\n      \n      this.deletionRequests.set(requestId, deletionRequest);\n      \n      // Log the request\n      this.logPrivacyAction(userId, 'data_deletion_requested', 'user_data', \n        `${deletionScope} deletion requested by ${parentalRequest ? 'parent' : 'user'}`);\n      \n      // Schedule processing\n      setTimeout(() => {\n        this.processDataDeletionRequest(requestId);\n      }, 2000);\n      \n      return { success: true, requestId };\n    } catch (error) {\n      console.error('Error requesting data deletion:', error);\n      return { success: false, error: 'Failed to submit deletion request' };\n    }\n  }\n\n  private async processDataExportRequest(requestId: string): Promise<void> {\n    const request = this.exportRequests.get(requestId);\n    if (!request) return;\n    \n    try {\n      request.status = 'approved';\n      \n      // Collect user data\n      const exportData = await this.collectUserDataForExport(request.userId, request.dataTypes);\n      \n      // In production, this would send the data securely to the user\n      console.log('Data export ready for user:', request.userId);\n      \n      request.status = 'completed';\n      request.completionTimestamp = Date.now();\n      \n      this.logPrivacyAction(request.userId, 'data_export_completed', 'user_data', \n        'Data export completed successfully');\n        \n    } catch (error) {\n      console.error('Error processing export request:', error);\n      request.status = 'denied';\n    }\n  }\n\n  private async processDataDeletionRequest(requestId: string): Promise<void> {\n    const request = this.deletionRequests.get(requestId);\n    if (!request) return;\n    \n    try {\n      request.status = 'approved';\n      \n      // Perform data deletion\n      if (request.deletionScope === 'complete') {\n        await this.deleteAllUserData(request.userId);\n      } else if (request.specificData) {\n        await this.deleteSpecificUserData(request.userId, request.specificData);\n      }\n      \n      request.status = 'completed';\n      request.completionTimestamp = Date.now();\n      \n      this.logPrivacyAction(request.userId, 'data_deletion_completed', 'user_data', \n        `${request.deletionScope} data deletion completed`);\n        \n    } catch (error) {\n      console.error('Error processing deletion request:', error);\n      request.status = 'denied';\n    }\n  }\n\n  // Data Collection Validation\n  public validateDataCollection(\n    userId: string,\n    dataType: string,\n    purpose: string\n  ): { allowed: boolean; reason?: string; alternatives?: string[] } {\n    // Check consent\n    if (!this.hasConsentForDataType(userId, dataType)) {\n      return {\n        allowed: false,\n        reason: 'No user consent for this data type',\n        alternatives: ['basic_interaction', 'anonymous_analytics']\n      };\n    }\n    \n    // Check privacy settings\n    if (!this.isDataCollectionAllowed(dataType)) {\n      return {\n        allowed: false,\n        reason: 'Data collection disabled in privacy settings',\n        alternatives: ['aggregated_data', 'minimal_data']\n      };\n    }\n    \n    // Check purpose limitation\n    if (!this.isPurposeLegitimate(purpose)) {\n      return {\n        allowed: false,\n        reason: 'Purpose not aligned with legitimate interests',\n        alternatives: ['educational_purpose', 'safety_purpose']\n      };\n    }\n    \n    return { allowed: true };\n  }\n\n  // Utility Methods\n  private isConsentValid(consent: DataProcessingConsent): boolean {\n    const consentAge = Date.now() - consent.timestamp;\n    const maxAge = 365 * 24 * 60 * 60 * 1000; // 1 year\n    \n    return consent.consentGiven && consentAge < maxAge;\n  }\n\n  private hasConsentForDataType(userId: string, dataType: string): boolean {\n    const consent = this.userConsents.get(userId);\n    if (!consent || !this.isConsentValid(consent)) {\n      return false;\n    }\n    \n    const typeMapping: Record<string, keyof DataProcessingConsent['specificConsents']> = {\n      'voice_data': 'voiceProcessing',\n      'emotional_analysis': 'emotionalAnalysis',\n      'learning_progress': 'learningTracking',\n      'conversation_history': 'dataRetention'\n    };\n    \n    const consentKey = typeMapping[dataType];\n    return consentKey ? consent.specificConsents[consentKey] : true;\n  }\n\n  private requiresAnonymization(dataType: string): boolean {\n    const anonymizationRequired = ['voice_data', 'conversation_history', 'behavioral_data'];\n    return anonymizationRequired.includes(dataType);\n  }\n\n  private isSensitiveData(dataType: string): boolean {\n    const sensitiveTypes = ['voice_data', 'emotional_analysis', 'personal_preferences'];\n    return sensitiveTypes.includes(dataType);\n  }\n\n  private containsPersonalIdentifiers(data: any): boolean {\n    if (typeof data === 'string') {\n      const emailRegex = /\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b/;\n      const phoneRegex = /\\b\\d{3}-\\d{3}-\\d{4}\\b/;\n      return emailRegex.test(data) || phoneRegex.test(data);\n    }\n    \n    if (typeof data === 'object' && data !== null) {\n      return data.hasOwnProperty('email') || \n             data.hasOwnProperty('phone') || \n             data.hasOwnProperty('name');\n    }\n    \n    return false;\n  }\n\n  private isDataCollectionAllowed(dataType: string): boolean {\n    const typeMapping: Record<string, keyof PrivacySettings['dataCollection']> = {\n      'voice_data': 'voiceRecording',\n      'text_input': 'textInput',\n      'behavioral_data': 'behavioralAnalytics',\n      'emotional_analysis': 'emotionalAnalysis',\n      'learning_progress': 'learningProgress'\n    };\n    \n    const settingKey = typeMapping[dataType];\n    return settingKey ? this.privacySettings.dataCollection[settingKey] : false;\n  }\n\n  private isPurposeLegitimate(purpose: string): boolean {\n    const legitimatePurposes = [\n      'educational_content',\n      'safety_monitoring',\n      'user_experience',\n      'technical_support',\n      'compliance'\n    ];\n    \n    return legitimatePurposes.includes(purpose);\n  }\n\n  private getRetentionPeriod(dataType: string): number {\n    const typeMapping: Record<string, keyof PrivacySettings['dataRetention']> = {\n      'session_data': 'sessionData',\n      'personal_preferences': 'personalPreferences',\n      'learning_progress': 'learningProgress',\n      'conversation_history': 'conversationHistory'\n    };\n    \n    const settingKey = typeMapping[dataType];\n    return settingKey ? this.privacySettings.dataRetention[settingKey] : 24; // Default 24 hours\n  }\n\n  private scheduleDataDeletion(\n    userId: string, \n    dataTypes: string[], \n    retentionHours?: number\n  ): void {\n    const deletionTime = retentionHours || 24;\n    \n    setTimeout(() => {\n      this.deleteSpecificUserData(userId, dataTypes);\n    }, deletionTime * 60 * 60 * 1000);\n  }\n\n  private async deleteAllUserData(userId: string): Promise<void> {\n    // Remove from all data stores\n    this.userConsents.delete(userId);\n    \n    // Clear from other services (would integrate with other services)\n    console.log(`All data deleted for user: ${userId}`);\n    \n    this.logPrivacyAction(userId, 'data_deleted', 'all_data', 'Complete user data deletion');\n  }\n\n  private async deleteSpecificUserData(userId: string, dataTypes: string[]): Promise<void> {\n    dataTypes.forEach(dataType => {\n      // Delete specific data types (would integrate with data stores)\n      console.log(`Deleted ${dataType} for user: ${userId}`);\n    });\n    \n    this.logPrivacyAction(userId, 'data_deleted', 'specific_data', \n      `Deleted data types: ${dataTypes.join(', ')}`);\n  }\n\n  private async collectUserDataForExport(userId: string, dataTypes: string[]): Promise<any> {\n    const exportData: any = {};\n    \n    dataTypes.forEach(dataType => {\n      // Collect data from various services\n      exportData[dataType] = `[${dataType} data for ${userId}]`;\n    });\n    \n    return exportData;\n  }\n\n  private logPrivacyAction(\n    userId: string,\n    action: string,\n    dataType: string,\n    details: string\n  ): void {\n    const logEntry: PrivacyAuditLog = {\n      timestamp: Date.now(),\n      userId,\n      action,\n      dataType,\n      details\n    };\n    \n    this.auditLog.push(logEntry);\n    \n    // Keep audit log size manageable\n    if (this.auditLog.length > 10000) {\n      this.auditLog = this.auditLog.slice(-5000);\n    }\n  }\n\n  private startAuditLogCleanup(): void {\n    // Clean up old audit logs every day\n    setInterval(() => {\n      const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);\n      this.auditLog = this.auditLog.filter(log => log.timestamp > thirtyDaysAgo);\n    }, 24 * 60 * 60 * 1000);\n  }\n\n  private verifyParentalConsent(parentalConsent: any): boolean {\n    // In production, this would verify the parent's identity and consent\n    return parentalConsent.verificationCode === 'valid_code';\n  }\n\n  private generateConsentUrl(consentRequest: any): string {\n    // Generate a secure consent URL\n    return `https://app.oldtom.com/consent?request=${btoa(JSON.stringify(consentRequest))}`;\n  }\n\n  private updatePrivacySettingsFromConsent(userId: string, consent: DataProcessingConsent): void {\n    // Update privacy settings based on user consent\n    this.privacySettings.dataCollection.voiceRecording = consent.specificConsents.voiceProcessing;\n    this.privacySettings.dataCollection.emotionalAnalysis = consent.specificConsents.emotionalAnalysis;\n    this.privacySettings.dataCollection.learningProgress = consent.specificConsents.learningTracking;\n  }\n\n  private getPermittedDataTypes(consent: DataProcessingConsent): string[] {\n    const permissions: string[] = ['basic_interaction'];\n    \n    if (consent.specificConsents.voiceProcessing) {\n      permissions.push('voice_data');\n    }\n    \n    if (consent.specificConsents.emotionalAnalysis) {\n      permissions.push('emotional_analysis');\n    }\n    \n    if (consent.specificConsents.learningTracking) {\n      permissions.push('learning_progress');\n    }\n    \n    return permissions;\n  }\n\n  // Public API Methods\n  public getPrivacySettings(): PrivacySettings {\n    return { ...this.privacySettings };\n  }\n\n  public updatePrivacySettings(updates: Partial<PrivacySettings>): boolean {\n    try {\n      this.privacySettings = { ...this.privacySettings, ...updates };\n      return true;\n    } catch (error) {\n      console.error('Error updating privacy settings:', error);\n      return false;\n    }\n  }\n\n  public getUserConsent(userId: string): DataProcessingConsent | null {\n    return this.userConsents.get(userId) || null;\n  }\n\n  public getAuditLog(userId?: string): PrivacyAuditLog[] {\n    if (userId) {\n      return this.auditLog.filter(log => log.userId === userId);\n    }\n    return this.auditLog.slice(); // Return copy\n  }\n\n  public generatePrivacyReport(): {\n    totalUsers: number;\n    consentedUsers: number;\n    dataExportRequests: number;\n    dataDeletionRequests: number;\n    auditLogEntries: number;\n  } {\n    return {\n      totalUsers: this.userConsents.size,\n      consentedUsers: Array.from(this.userConsents.values())\n        .filter(consent => consent.consentGiven).length,\n      dataExportRequests: this.exportRequests.size,\n      dataDeletionRequests: this.deletionRequests.size,\n      auditLogEntries: this.auditLog.length\n    };\n  }\n}\n\nexport const privacyService = new PrivacyService();\nexport default PrivacyService;
+interface PrivacySettings {
+  dataCollection: {
+    voiceRecording: boolean;
+    textInput: boolean;
+    behavioralAnalytics: boolean;
+    emotionalAnalysis: boolean;
+    learningProgress: boolean;
+  };
+  dataRetention: {
+    sessionData: number; // hours
+    personalPreferences: number; // days
+    learningProgress: number; // days
+    conversationHistory: number; // days
+  };
+  dataSharing: {
+    thirdPartyAnalytics: boolean;
+    educationalResearch: boolean;
+    productImprovement: boolean;
+  };
+  parentalControls: {
+    consentRequired: boolean;
+    accessToData: boolean;
+    deletionRights: boolean;
+    activityReports: boolean;
+  };
+}
+
+interface DataProcessingConsent {
+  userId: string;
+  timestamp: number;
+  consentGiven: boolean;
+  consentVersion: string;
+  parentalConsent?: {
+    given: boolean;
+    parentEmail: string;
+    verificationMethod: string;
+    timestamp: number;
+  };
+  specificConsents: {
+    voiceProcessing: boolean;
+    emotionalAnalysis: boolean;
+    learningTracking: boolean;
+    dataRetention: boolean;
+  };
+}
+
+interface DataExportRequest {
+  userId: string;
+  requestTimestamp: number;
+  parentalRequest: boolean;
+  requestorEmail: string;
+  dataTypes: string[];
+  status: 'pending' | 'approved' | 'completed' | 'denied';
+  completionTimestamp?: number;
+}
+
+interface DataDeletionRequest {
+  userId: string;
+  requestTimestamp: number;
+  parentalRequest: boolean;
+  requestorEmail: string;
+  deletionScope: 'partial' | 'complete';
+  specificData?: string[];
+  status: 'pending' | 'approved' | 'completed' | 'denied';
+  completionTimestamp?: number;
+  verificationRequired: boolean;
+}
+
+interface PrivacyAuditLog {
+  timestamp: number;
+  userId: string;
+  action: string;
+  dataType: string;
+  details: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+class PrivacyService {
+  private privacySettings: PrivacySettings;
+  private userConsents: Map<string, DataProcessingConsent> = new Map();
+  private exportRequests: Map<string, DataExportRequest> = new Map();
+  private deletionRequests: Map<string, DataDeletionRequest> = new Map();
+  private auditLog: PrivacyAuditLog[] = [];
+  private encryptionKey: string;
+  private dataProcessors: Map<string, any> = new Map();
+
+  constructor() {
+    this.privacySettings = this.getDefaultPrivacySettings();
+    this.encryptionKey = this.generateEncryptionKey();
+    this.initializeDataProcessors();
+    this.startAuditLogCleanup();
+  }
+
+  private getDefaultPrivacySettings(): PrivacySettings {
+    return {
+      dataCollection: {
+        voiceRecording: false, // Requires explicit consent
+        textInput: true,       // Minimal data collection
+        behavioralAnalytics: false, // Requires consent
+        emotionalAnalysis: false,   // Requires consent
+        learningProgress: true      // Educational purpose
+      },
+      dataRetention: {
+        sessionData: 24,        // 24 hours
+        personalPreferences: 7, // 7 days
+        learningProgress: 30,   // 30 days
+        conversationHistory: 7  // 7 days
+      },
+      dataSharing: {
+        thirdPartyAnalytics: false,
+        educationalResearch: false,
+        productImprovement: false
+      },
+      parentalControls: {
+        consentRequired: true,
+        accessToData: true,
+        deletionRights: true,
+        activityReports: true
+      }
+    };
+  }
+
+  private generateEncryptionKey(): string {
+    // In production, this would use a proper key management system
+    return 'privacy_encryption_key_' + Date.now();
+  }
+
+  private initializeDataProcessors() {
+    // Initialize data anonymization and encryption processors
+    this.dataProcessors.set('anonymizer', {
+      process: (data: any) => this.anonymizeData(data),
+      reversible: false
+    });
+
+    this.dataProcessors.set('encryptor', {
+      process: (data: any) => this.encryptData(data),
+      reversible: true
+    });
+
+    this.dataProcessors.set('hasher', {
+      process: (data: any) => this.hashSensitiveData(data),
+      reversible: false
+    });
+  }
+
+  // Consent Management
+  public async requestConsent(
+    userId: string,
+    childAge: number,
+    requiredConsents: string[],
+    parentEmail?: string
+  ): Promise<{ 
+    consentRequired: boolean;
+    parentalConsentRequired: boolean;
+    consentUrl?: string;
+    temporaryPermissions: string[];
+  }> {
+    const requiresParentalConsent = childAge < 13; // COPPA compliance
+    
+    // Check existing consent
+    const existingConsent = this.userConsents.get(userId);
+    if (existingConsent && this.isConsentValid(existingConsent)) {
+      return {
+        consentRequired: false,
+        parentalConsentRequired: false,
+        temporaryPermissions: this.getPermittedDataTypes(existingConsent)
+      };
+    }
+
+    // Generate consent request
+    const consentRequest = {
+      userId,
+      requiredConsents,
+      parentalConsentRequired: requiresParentalConsent,
+      parentEmail,
+      timestamp: Date.now()
+    };
+
+    // Log consent request
+    this.logPrivacyAction(userId, 'consent_requested', 'user_data', 
+      `Consent requested for: ${requiredConsents.join(', ')}`);
+
+    return {
+      consentRequired: true,
+      parentalConsentRequired: requiresParentalConsent,
+      consentUrl: this.generateConsentUrl(consentRequest),
+      temporaryPermissions: ['basic_interaction'] // Minimal permissions while consent pending
+    };
+  }
+
+  public async recordConsent(
+    userId: string,
+    consentData: {
+      voiceProcessing: boolean;
+      emotionalAnalysis: boolean;
+      learningTracking: boolean;
+      dataRetention: boolean;
+    },
+    parentalConsent?: {
+      parentEmail: string;
+      verificationCode: string;
+      consentGiven: boolean;
+    }
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const consent: DataProcessingConsent = {
+        userId,
+        timestamp: Date.now(),
+        consentGiven: true,
+        consentVersion: '1.0',
+        specificConsents: consentData
+      };
+
+      // Handle parental consent if provided
+      if (parentalConsent) {
+        if (!this.verifyParentalConsent(parentalConsent)) {
+          return { success: false, error: 'Parental consent verification failed' };
+        }
+        
+        consent.parentalConsent = {
+          given: parentalConsent.consentGiven,
+          parentEmail: parentalConsent.parentEmail,
+          verificationMethod: 'email_verification',
+          timestamp: Date.now()
+        };
+      }
+
+      // Store consent
+      this.userConsents.set(userId, consent);
+
+      // Update privacy settings based on consent
+      this.updatePrivacySettingsFromConsent(userId, consent);
+
+      // Log consent recording
+      this.logPrivacyAction(userId, 'consent_recorded', 'consent_data', 
+        `Consent recorded with parental approval: ${!!parentalConsent}`);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error recording consent:', error);
+      return { success: false, error: 'Failed to record consent' };
+    }
+  }
+
+  public revokeConsent(userId: string): boolean {
+    try {
+      const existingConsent = this.userConsents.get(userId);
+      if (existingConsent) {
+        existingConsent.consentGiven = false;
+        existingConsent.timestamp = Date.now();
+        this.userConsents.set(userId, existingConsent);
+        
+        // Trigger data deletion for non-essential data
+        this.scheduleDataDeletion(userId, ['voice_data', 'emotional_analysis', 'behavioral_data']);
+        
+        this.logPrivacyAction(userId, 'consent_revoked', 'consent_data', 'User revoked consent');
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error revoking consent:', error);
+      return false;
+    }
+  }
+
+  // Data Processing and Protection
+  public async processUserData(
+    userId: string,
+    dataType: string,
+    data: any,
+    purpose: string
+  ): Promise<{ processed: boolean; processedData?: any; error?: string }> {
+    try {
+      // Check consent
+      if (!this.hasConsentForDataType(userId, dataType)) {
+        return { 
+          processed: false, 
+          error: `No consent for ${dataType} processing` 
+        };
+      }
+
+      // Apply privacy-preserving processing
+      let processedData = data;
+
+      // Anonymize if required
+      if (this.requiresAnonymization(dataType)) {
+        processedData = this.anonymizeData(processedData);
+      }
+
+      // Encrypt sensitive data
+      if (this.isSensitiveData(dataType)) {
+        processedData = this.encryptData(processedData);
+      }
+
+      // Hash identifiable information
+      if (this.containsPersonalIdentifiers(processedData)) {
+        processedData = this.hashSensitiveData(processedData);
+      }
+
+      // Log data processing
+      this.logPrivacyAction(userId, 'data_processed', dataType, 
+        `Data processed for purpose: ${purpose}`);
+
+      // Schedule deletion based on retention policy
+      this.scheduleDataDeletion(userId, [dataType], this.getRetentionPeriod(dataType));
+
+      return { processed: true, processedData };
+    } catch (error) {
+      console.error('Error processing user data:', error);
+      return { processed: false, error: 'Data processing failed' };
+    }
+  }
+
+  private anonymizeData(data: any): any {
+    if (typeof data === 'string') {
+      // Remove or replace personal identifiers
+      return data
+        .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[EMAIL]')
+        .replace(/\b\d{3}-\d{3}-\d{4}\b/g, '[PHONE]')
+        .replace(/\b\d{3}-\d{2}-\d{4}\b/g, '[SSN]')
+        .replace(/\b[A-Z][a-z]+ [A-Z][a-z]+\b/g, '[NAME]');
+    }
+    
+    if (typeof data === 'object' && data !== null) {
+      const anonymized = { ...data };
+      
+      // Remove direct identifiers
+      delete anonymized.name;
+      delete anonymized.email;
+      delete anonymized.phone;
+      delete anonymized.address;
+      
+      // Replace with anonymized versions
+      if (data.userId) {
+        anonymized.userId = this.hashString(data.userId);
+      }
+      
+      return anonymized;
+    }
+    
+    return data;
+  }
+
+  private encryptData(data: any): string {
+    // Simple encryption for demo - use proper encryption in production
+    const dataString = JSON.stringify(data);
+    return btoa(dataString + this.encryptionKey);
+  }
+
+  private decryptData(encryptedData: string): any {
+    try {
+      const decrypted = atob(encryptedData);
+      const dataString = decrypted.replace(this.encryptionKey, '');
+      return JSON.parse(dataString);
+    } catch (error) {
+      console.error('Decryption failed:', error);
+      return null;
+    }
+  }
+
+  private hashSensitiveData(data: any): any {
+    if (typeof data === 'object' && data !== null) {
+      const hashed = { ...data };
+      
+      // Hash specific fields that might contain sensitive info
+      if (data.sessionId) {
+        hashed.sessionId = this.hashString(data.sessionId);
+      }
+      
+      if (data.voiceData) {
+        hashed.voiceData = this.hashString(JSON.stringify(data.voiceData));
+      }
+      
+      return hashed;
+    }
+    
+    return data;
+  }
+
+  private hashString(input: string): string {
+    // Simple hash function for demo - use proper hashing in production
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      const char = input.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash.toString(36);
+  }
+
+  // Data Rights Management
+  public async requestDataExport(
+    userId: string,
+    requestorEmail: string,
+    parentalRequest: boolean = false
+  ): Promise<{ success: boolean; requestId?: string; error?: string }> {
+    try {
+      const requestId = `export_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const exportRequest: DataExportRequest = {
+        userId,
+        requestTimestamp: Date.now(),
+        parentalRequest,
+        requestorEmail,
+        dataTypes: ['conversations', 'preferences', 'learning_progress', 'consent_records'],
+        status: 'pending'
+      };
+      
+      this.exportRequests.set(requestId, exportRequest);
+      
+      // Log the request
+      this.logPrivacyAction(userId, 'data_export_requested', 'user_data', 
+        `Data export requested by ${parentalRequest ? 'parent' : 'user'}`);
+      
+      // Schedule processing (in production, this would trigger an async process)
+      setTimeout(() => {
+        this.processDataExportRequest(requestId);
+      }, 1000);
+      
+      return { success: true, requestId };
+    } catch (error) {
+      console.error('Error requesting data export:', error);
+      return { success: false, error: 'Failed to submit export request' };
+    }
+  }
+
+  public async requestDataDeletion(
+    userId: string,
+    requestorEmail: string,
+    deletionScope: 'partial' | 'complete',
+    specificData?: string[],
+    parentalRequest: boolean = false
+  ): Promise<{ success: boolean; requestId?: string; error?: string }> {
+    try {
+      const requestId = `deletion_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const deletionRequest: DataDeletionRequest = {
+        userId,
+        requestTimestamp: Date.now(),
+        parentalRequest,
+        requestorEmail,
+        deletionScope,
+        specificData,
+        status: 'pending',
+        verificationRequired: true
+      };
+      
+      this.deletionRequests.set(requestId, deletionRequest);
+      
+      // Log the request
+      this.logPrivacyAction(userId, 'data_deletion_requested', 'user_data', 
+        `${deletionScope} deletion requested by ${parentalRequest ? 'parent' : 'user'}`);
+      
+      // Schedule processing
+      setTimeout(() => {
+        this.processDataDeletionRequest(requestId);
+      }, 2000);
+      
+      return { success: true, requestId };
+    } catch (error) {
+      console.error('Error requesting data deletion:', error);
+      return { success: false, error: 'Failed to submit deletion request' };
+    }
+  }
+
+  private async processDataExportRequest(requestId: string): Promise<void> {
+    const request = this.exportRequests.get(requestId);
+    if (!request) return;
+    
+    try {
+      request.status = 'approved';
+      
+      // Collect user data
+      const exportData = await this.collectUserDataForExport(request.userId, request.dataTypes);
+      
+      // In production, this would send the data securely to the user
+      console.log('Data export ready for user:', request.userId);
+      
+      request.status = 'completed';
+      request.completionTimestamp = Date.now();
+      
+      this.logPrivacyAction(request.userId, 'data_export_completed', 'user_data', 
+        'Data export completed successfully');
+        
+    } catch (error) {
+      console.error('Error processing export request:', error);
+      request.status = 'denied';
+    }
+  }
+
+  private async processDataDeletionRequest(requestId: string): Promise<void> {
+    const request = this.deletionRequests.get(requestId);
+    if (!request) return;
+    
+    try {
+      request.status = 'approved';
+      
+      // Perform data deletion
+      if (request.deletionScope === 'complete') {
+        await this.deleteAllUserData(request.userId);
+      } else if (request.specificData) {
+        await this.deleteSpecificUserData(request.userId, request.specificData);
+      }
+      
+      request.status = 'completed';
+      request.completionTimestamp = Date.now();
+      
+      this.logPrivacyAction(request.userId, 'data_deletion_completed', 'user_data', 
+        `${request.deletionScope} data deletion completed`);
+        
+    } catch (error) {
+      console.error('Error processing deletion request:', error);
+      request.status = 'denied';
+    }
+  }
+
+  // Data Collection Validation
+  public validateDataCollection(
+    userId: string,
+    dataType: string,
+    purpose: string
+  ): { allowed: boolean; reason?: string; alternatives?: string[] } {
+    // Check consent
+    if (!this.hasConsentForDataType(userId, dataType)) {
+      return {
+        allowed: false,
+        reason: 'No user consent for this data type',
+        alternatives: ['basic_interaction', 'anonymous_analytics']
+      };
+    }
+    
+    // Check privacy settings
+    if (!this.isDataCollectionAllowed(dataType)) {
+      return {
+        allowed: false,
+        reason: 'Data collection disabled in privacy settings',
+        alternatives: ['aggregated_data', 'minimal_data']
+      };
+    }
+    
+    // Check purpose limitation
+    if (!this.isPurposeLegitimate(purpose)) {
+      return {
+        allowed: false,
+        reason: 'Purpose not aligned with legitimate interests',
+        alternatives: ['educational_purpose', 'safety_purpose']
+      };
+    }
+    
+    return { allowed: true };
+  }
+
+  // Utility Methods
+  private isConsentValid(consent: DataProcessingConsent): boolean {
+    const consentAge = Date.now() - consent.timestamp;
+    const maxAge = 365 * 24 * 60 * 60 * 1000; // 1 year
+    
+    return consent.consentGiven && consentAge < maxAge;
+  }
+
+  private hasConsentForDataType(userId: string, dataType: string): boolean {
+    const consent = this.userConsents.get(userId);
+    if (!consent || !this.isConsentValid(consent)) {
+      return false;
+    }
+    
+    const typeMapping: Record<string, keyof DataProcessingConsent['specificConsents']> = {
+      'voice_data': 'voiceProcessing',
+      'emotional_analysis': 'emotionalAnalysis',
+      'learning_progress': 'learningTracking',
+      'conversation_history': 'dataRetention'
+    };
+    
+    const consentKey = typeMapping[dataType];
+    return consentKey ? consent.specificConsents[consentKey] : true;
+  }
+
+  private requiresAnonymization(dataType: string): boolean {
+    const anonymizationRequired = ['voice_data', 'conversation_history', 'behavioral_data'];
+    return anonymizationRequired.includes(dataType);
+  }
+
+  private isSensitiveData(dataType: string): boolean {
+    const sensitiveTypes = ['voice_data', 'emotional_analysis', 'personal_preferences'];
+    return sensitiveTypes.includes(dataType);
+  }
+
+  private containsPersonalIdentifiers(data: any): boolean {
+    if (typeof data === 'string') {
+      const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/;
+      const phoneRegex = /\b\d{3}-\d{3}-\d{4}\b/;
+      return emailRegex.test(data) || phoneRegex.test(data);
+    }
+    
+    if (typeof data === 'object' && data !== null) {
+      return data.hasOwnProperty('email') || 
+             data.hasOwnProperty('phone') || 
+             data.hasOwnProperty('name');
+    }
+    
+    return false;
+  }
+
+  private isDataCollectionAllowed(dataType: string): boolean {
+    const typeMapping: Record<string, keyof PrivacySettings['dataCollection']> = {
+      'voice_data': 'voiceRecording',
+      'text_input': 'textInput',
+      'behavioral_data': 'behavioralAnalytics',
+      'emotional_analysis': 'emotionalAnalysis',
+      'learning_progress': 'learningProgress'
+    };
+    
+    const settingKey = typeMapping[dataType];
+    return settingKey ? this.privacySettings.dataCollection[settingKey] : false;
+  }
+
+  private isPurposeLegitimate(purpose: string): boolean {
+    const legitimatePurposes = [
+      'educational_content',
+      'safety_monitoring',
+      'user_experience',
+      'technical_support',
+      'compliance'
+    ];
+    
+    return legitimatePurposes.includes(purpose);
+  }
+
+  private getRetentionPeriod(dataType: string): number {
+    const typeMapping: Record<string, keyof PrivacySettings['dataRetention']> = {
+      'session_data': 'sessionData',
+      'personal_preferences': 'personalPreferences',
+      'learning_progress': 'learningProgress',
+      'conversation_history': 'conversationHistory'
+    };
+    
+    const settingKey = typeMapping[dataType];
+    return settingKey ? this.privacySettings.dataRetention[settingKey] : 24; // Default 24 hours
+  }
+
+  private scheduleDataDeletion(
+    userId: string, 
+    dataTypes: string[], 
+    retentionHours?: number
+  ): void {
+    const deletionTime = retentionHours || 24;
+    
+    setTimeout(() => {
+      this.deleteSpecificUserData(userId, dataTypes);
+    }, deletionTime * 60 * 60 * 1000);
+  }
+
+  private async deleteAllUserData(userId: string): Promise<void> {
+    // Remove from all data stores
+    this.userConsents.delete(userId);
+    
+    // Clear from other services (would integrate with other services)
+    console.log(`All data deleted for user: ${userId}`);
+    
+    this.logPrivacyAction(userId, 'data_deleted', 'all_data', 'Complete user data deletion');
+  }
+
+  private async deleteSpecificUserData(userId: string, dataTypes: string[]): Promise<void> {
+    dataTypes.forEach(dataType => {
+      // Delete specific data types (would integrate with data stores)
+      console.log(`Deleted ${dataType} for user: ${userId}`);
+    });
+    
+    this.logPrivacyAction(userId, 'data_deleted', 'specific_data', 
+      `Deleted data types: ${dataTypes.join(', ')}`);
+  }
+
+  private async collectUserDataForExport(userId: string, dataTypes: string[]): Promise<any> {
+    const exportData: any = {};
+    
+    dataTypes.forEach(dataType => {
+      // Collect data from various services
+      exportData[dataType] = `[${dataType} data for ${userId}]`;
+    });
+    
+    return exportData;
+  }
+
+  private logPrivacyAction(
+    userId: string,
+    action: string,
+    dataType: string,
+    details: string
+  ): void {
+    const logEntry: PrivacyAuditLog = {
+      timestamp: Date.now(),
+      userId,
+      action,
+      dataType,
+      details
+    };
+    
+    this.auditLog.push(logEntry);
+    
+    // Keep audit log size manageable
+    if (this.auditLog.length > 10000) {
+      this.auditLog = this.auditLog.slice(-5000);
+    }
+  }
+
+  private startAuditLogCleanup(): void {
+    // Clean up old audit logs every day
+    setInterval(() => {
+      const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+      this.auditLog = this.auditLog.filter(log => log.timestamp > thirtyDaysAgo);
+    }, 24 * 60 * 60 * 1000);
+  }
+
+  private verifyParentalConsent(parentalConsent: any): boolean {
+    // In production, this would verify the parent's identity and consent
+    return parentalConsent.verificationCode === 'valid_code';
+  }
+
+  private generateConsentUrl(consentRequest: any): string {
+    // Generate a secure consent URL
+    return `https://app.oldtom.com/consent?request=${btoa(JSON.stringify(consentRequest))}`;
+  }
+
+  private updatePrivacySettingsFromConsent(userId: string, consent: DataProcessingConsent): void {
+    // Update privacy settings based on user consent
+    this.privacySettings.dataCollection.voiceRecording = consent.specificConsents.voiceProcessing;
+    this.privacySettings.dataCollection.emotionalAnalysis = consent.specificConsents.emotionalAnalysis;
+    this.privacySettings.dataCollection.learningProgress = consent.specificConsents.learningTracking;
+  }
+
+  private getPermittedDataTypes(consent: DataProcessingConsent): string[] {
+    const permissions: string[] = ['basic_interaction'];
+    
+    if (consent.specificConsents.voiceProcessing) {
+      permissions.push('voice_data');
+    }
+    
+    if (consent.specificConsents.emotionalAnalysis) {
+      permissions.push('emotional_analysis');
+    }
+    
+    if (consent.specificConsents.learningTracking) {
+      permissions.push('learning_progress');
+    }
+    
+    return permissions;
+  }
+
+  // Public API Methods
+  public getPrivacySettings(): PrivacySettings {
+    return { ...this.privacySettings };
+  }
+
+  public updatePrivacySettings(updates: Partial<PrivacySettings>): boolean {
+    try {
+      this.privacySettings = { ...this.privacySettings, ...updates };
+      return true;
+    } catch (error) {
+      console.error('Error updating privacy settings:', error);
+      return false;
+    }
+  }
+
+  public getUserConsent(userId: string): DataProcessingConsent | null {
+    return this.userConsents.get(userId) || null;
+  }
+
+  public getAuditLog(userId?: string): PrivacyAuditLog[] {
+    if (userId) {
+      return this.auditLog.filter(log => log.userId === userId);
+    }
+    return this.auditLog.slice(); // Return copy
+  }
+
+  public generatePrivacyReport(): {
+    totalUsers: number;
+    consentedUsers: number;
+    dataExportRequests: number;
+    dataDeletionRequests: number;
+    auditLogEntries: number;
+  } {
+    return {
+      totalUsers: this.userConsents.size,
+      consentedUsers: Array.from(this.userConsents.values())
+        .filter(consent => consent.consentGiven).length,
+      dataExportRequests: this.exportRequests.size,
+      dataDeletionRequests: this.deletionRequests.size,
+      auditLogEntries: this.auditLog.length
+    };
+  }
+}
+
+export const privacyService = new PrivacyService();
+export default PrivacyService;

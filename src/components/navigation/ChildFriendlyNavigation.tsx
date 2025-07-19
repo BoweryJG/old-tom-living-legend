@@ -25,7 +25,7 @@ import {
   Waves as OceanIcon,
   AccessTime as TimeIcon,
   Palette as PaintIcon,
-  Dream as DreamIcon,
+  Bedtime as DreamIcon,
   Menu as MenuIcon,
   ArrowBack as BackIcon,
   Settings as SettingsIcon,

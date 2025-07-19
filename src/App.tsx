@@ -141,7 +141,10 @@ const StoryPage: React.FC = () => {
       sx={{ 
         position: 'relative', 
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0a1a2e 0%, #16537e 25%, #2E8B57 75%, #1a4d3a 100%)',
+        background: `linear-gradient(135deg, rgba(10,26,46,0.8) 0%, rgba(22,83,126,0.8) 25%, rgba(46,139,87,0.8) 75%, rgba(26,77,58,0.8) 100%), url('/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
         overflow: 'hidden',
       }}
     >

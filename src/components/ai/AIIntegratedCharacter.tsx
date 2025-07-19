@@ -1,1 +1,693 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';\nimport { Box, Typography, Fade, IconButton, Tooltip, Alert } from '@mui/material';\nimport { Mic, MicOff, VolumeUp, VolumeOff, Psychology, Chat } from '@mui/icons-material';\nimport { animated, useSpring } from '@react-spring/web';\n\nimport { useAppSelector, useAppDispatch } from '@/store';\nimport { \n  processAIInteraction, \n  startSpeechRecognition, \n  stopSpeechRecognition,\n  startInteraction,\n  endInteraction,\n  initializeAISession,\n  setSpeechTranscript,\n  setSpeechCommand,\n  addToVoiceQueue,\n  setCurrentAudio,\n  requestPrivacyConsent,\n  updateVoiceSettings\n} from '@/store/slices/aiSlice';\nimport { speechRecognitionService } from '@/services/speechRecognitionService';\n\ninterface AIIntegratedCharacterProps {\n  characterId: 'old-tom' | 'george-davidson' | 'child-narrator';\n  size?: 'small' | 'medium' | 'large';\n  interactive?: boolean;\n  enableVoice?: boolean;\n  enableEmotionalAI?: boolean;\n  context?: string;\n  childAge?: number;\n  onAIResponse?: (response: string) => void;\n  showControls?: boolean;\n  autoInitialize?: boolean;\n}\n\nconst characterConfig = {\n  'old-tom': {\n    name: 'Old Tom',\n    emoji: '🐋',\n    color: '#1565C0',\n    gradientColors: ['rgba(21, 101, 192, 0.1)', 'rgba(2, 119, 189, 0.2)'],\n    greetings: [\n      \"Welcome to my ocean realm, young explorer!\",\n      \"The tides have brought you to me...\",\n      \"Ah, another soul seeking stories from the deep!\",\n      \"Come closer, and I'll share the ocean's secrets.\"\n    ]\n  },\n  'george-davidson': {\n    name: 'George Davidson',\n    emoji: '⚓',\n    color: '#8D6E63',\n    gradientColors: ['rgba(141, 110, 99, 0.1)', 'rgba(121, 85, 72, 0.2)'],\n    greetings: [\n      \"G'day there, young mate! Welcome aboard our story.\",\n      \"Well hello there, little sailor! Ready to hear some tales?\",\n      \"Ah, a curious young soul! Come here and I'll tell you about the old days.\"\n    ]\n  },\n  'child-narrator': {\n    name: 'Young Explorer',\n    emoji: '👦',\n    color: '#FF9800',\n    gradientColors: ['rgba(255, 152, 0, 0.1)', 'rgba(245, 124, 0, 0.2)'],\n    greetings: [\n      \"Oh wow! Are you here to learn about Old Tom too?\",\n      \"Hi there! I can't wait to show you what I've discovered!\",\n      \"Welcome! You're going to love meeting Old Tom!\"\n    ]\n  }\n};\n\nexport const AIIntegratedCharacter: React.FC<AIIntegratedCharacterProps> = ({\n  characterId,\n  size = 'medium',\n  interactive = true,\n  enableVoice = true,\n  enableEmotionalAI = true,\n  context = 'general',\n  childAge,\n  onAIResponse,\n  showControls = true,\n  autoInitialize = true\n}) => {\n  const dispatch = useAppDispatch();\n  const config = characterConfig[characterId];\n  \n  // Local state\n  const [isHovered, setIsHovered] = useState(false);\n  const [showGreeting, setShowGreeting] = useState(false);\n  const [currentGreeting, setCurrentGreeting] = useState('');\n  const [aiResponse, setAiResponse] = useState('');\n  const audioRef = useRef<HTMLAudioElement | null>(null);\n  \n  // AI State from Redux\n  const aiState = useAppSelector(state => state.ai);\n  const {\n    currentInteraction,\n    speechRecognition,\n    voiceSynthesis,\n    emotionalAnalysis,\n    conversationContext,\n    privacy,\n    performance\n  } = aiState;\n  \n  // Character state\n  const { characters } = useAppSelector(state => state.character);\n  const character = characters[characterId];\n  \n  // Size configurations\n  const sizeConfig = {\n    small: { width: 80, height: 80, fontSize: '1.5rem' },\n    medium: { width: 150, height: 150, fontSize: '2rem' },\n    large: { width: 200, height: 200, fontSize: '3rem' },\n  };\n  const dimensions = sizeConfig[size];\n  \n  // Initialize AI session\n  useEffect(() => {\n    if (autoInitialize && !conversationContext.sessionId) {\n      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n      dispatch(initializeAISession({ sessionId, childAge }));\n      \n      // Show greeting after initialization\n      setTimeout(() => {\n        const greeting = config.greetings[Math.floor(Math.random() * config.greetings.length)];\n        setCurrentGreeting(greeting);\n        setShowGreeting(true);\n        \n        // Auto-hide greeting\n        setTimeout(() => setShowGreeting(false), 5000);\n      }, 1000);\n    }\n  }, [autoInitialize, conversationContext.sessionId, childAge, config.greetings, dispatch]);\n  \n  // Speech recognition setup\n  useEffect(() => {\n    if (!enableVoice || !speechRecognition.supported) return;\n    \n    const handleSpeechResult = (result: any) => {\n      dispatch(setSpeechTranscript({\n        transcript: result.transcript,\n        confidence: result.confidence\n      }));\n      \n      if (result.isFinal) {\n        if (result.command) {\n          dispatch(setSpeechCommand(result.command));\n          handleVoiceCommand(result.command);\n        } else if (result.transcript.trim()) {\n          // Process as natural language input\n          handleVoiceInput(result.transcript);\n        }\n      }\n    };\n    \n    const handleSpeechError = (error: Error) => {\n      console.error('Speech recognition error:', error);\n    };\n    \n    speechRecognitionService.addListener('result', handleSpeechResult);\n    speechRecognitionService.addErrorListener(handleSpeechError);\n    \n    return () => {\n      speechRecognitionService.removeListener('result', handleSpeechResult);\n      speechRecognitionService.removeErrorListener(handleSpeechError);\n    };\n  }, [enableVoice, speechRecognition.supported, dispatch]);\n  \n  // Voice synthesis queue processing\n  useEffect(() => {\n    if (voiceSynthesis.queue.length > 0 && !voiceSynthesis.speaking && voiceSynthesis.settings.enabled) {\n      const nextItem = voiceSynthesis.queue[0];\n      if (nextItem.character === characterId) {\n        playAudioResponse(nextItem);\n      }\n    }\n  }, [voiceSynthesis.queue, voiceSynthesis.speaking, voiceSynthesis.settings.enabled, characterId]);\n  \n  // Handle AI interactions\n  const handleAIInteraction = useCallback(async (inputText?: string, interactionType: string = 'casual_chat') => {\n    if (currentInteraction.processing) return;\n    \n    // Check privacy consent first\n    if (!privacy.consentGiven) {\n      try {\n        await dispatch(requestPrivacyConsent({\n          childAge: childAge || 7,\n          requiredConsents: ['basic_interaction', 'character_chat']\n        })).unwrap();\n      } catch (error) {\n        console.error('Privacy consent failed:', error);\n        return;\n      }\n    }\n    \n    dispatch(startInteraction({\n      type: interactionType as any,\n      character: characterId,\n      method: inputText ? 'text' : 'gesture'\n    }));\n    \n    try {\n      const response = await dispatch(processAIInteraction({\n        input: { \n          text: inputText || `Hello ${config.name}!`, \n          context \n        },\n        interaction: { \n          type: interactionType, \n          character: characterId, \n          method: inputText ? 'text' : 'gesture'\n        },\n        userProfile: { \n          age: childAge,\n          emotionalState: emotionalAnalysis.currentEmotion?.primary \n        },\n        environment: { \n          currentPage: 'character_interaction',\n          sessionDuration: Date.now() - conversationContext.sessionStartTime\n        }\n      })).unwrap();\n      \n      if (response.success && response.response.text) {\n        setAiResponse(response.response.text);\n        onAIResponse?.(response.response.text);\n        \n        // Auto-hide AI response after 8 seconds\n        setTimeout(() => setAiResponse(''), 8000);\n      }\n    } catch (error) {\n      console.error('AI interaction failed:', error);\n    } finally {\n      dispatch(endInteraction());\n    }\n  }, [currentInteraction.processing, privacy.consentGiven, childAge, characterId, config.name, context, emotionalAnalysis.currentEmotion?.primary, conversationContext.sessionStartTime, onAIResponse, dispatch]);\n  \n  const handleVoiceInput = useCallback(async (transcript: string) => {\n    await handleAIInteraction(transcript, 'question');\n  }, [handleAIInteraction]);\n  \n  const handleVoiceCommand = useCallback(async (command: any) => {\n    if (command.type === `talk_to_${characterId.replace('-', '_')}`) {\n      await handleAIInteraction();\n    } else if (command.type === 'ask_about_marine_life' && command.parameters.subject) {\n      await handleAIInteraction(`Tell me about ${command.parameters.subject}`, 'question');\n    }\n  }, [handleAIInteraction, characterId]);\n  \n  const handleVoiceToggle = useCallback(async () => {\n    if (!enableVoice || !speechRecognition.supported) return;\n    \n    if (speechRecognition.listening) {\n      await dispatch(stopSpeechRecognition()).unwrap();\n    } else {\n      await dispatch(startSpeechRecognition(context)).unwrap();\n    }\n  }, [enableVoice, speechRecognition.supported, speechRecognition.listening, context, dispatch]);\n  \n  const playAudioResponse = useCallback((audioItem: any) => {\n    // For demo purposes, using browser's speech synthesis\n    if ('speechSynthesis' in window && voiceSynthesis.settings.enabled) {\n      const utterance = new SpeechSynthesisUtterance(audioItem.text);\n      \n      // Character-specific voice settings\n      if (characterId === 'old-tom') {\n        utterance.rate = 0.7;\n        utterance.pitch = 0.6;\n      } else if (characterId === 'george-davidson') {\n        utterance.rate = 0.8;\n        utterance.pitch = 0.8;\n      } else if (characterId === 'child-narrator') {\n        utterance.rate = 1.0;\n        utterance.pitch = 1.2;\n      }\n      \n      utterance.volume = voiceSynthesis.settings.volume;\n      \n      utterance.onstart = () => {\n        dispatch(setCurrentAudio({\n          id: audioItem.id,\n          character: audioItem.character,\n          duration: audioItem.text.length * 100\n        }));\n      };\n      \n      utterance.onend = () => {\n        dispatch(setCurrentAudio(null));\n      };\n      \n      speechSynthesis.speak(utterance);\n    }\n  }, [characterId, voiceSynthesis.settings.enabled, voiceSynthesis.settings.volume, dispatch]);\n  \n  const toggleVoice = useCallback(() => {\n    dispatch(updateVoiceSettings({\n      enabled: !voiceSynthesis.settings.enabled\n    }));\n  }, [voiceSynthesis.settings.enabled, dispatch]);\n  \n  // Animations\n  const floatAnimation = useSpring({\n    from: { transform: 'translateY(0px)' },\n    to: async (next) => {\n      while (true) {\n        await next({ transform: 'translateY(-8px)' });\n        await next({ transform: 'translateY(0px)' });\n      }\n    },\n    config: { duration: 3000 },\n  });\n  \n  const hoverAnimation = useSpring({\n    transform: isHovered ? 'scale(1.05)' : 'scale(1)',\n    filter: isHovered ? 'brightness(1.1)' : 'brightness(1)',\n    config: { tension: 200, friction: 20 },\n  });\n  \n  const speakingAnimation = useSpring({\n    transform: voiceSynthesis.speaking ? 'scale(1.02)' : 'scale(1)',\n    filter: voiceSynthesis.speaking ? 'brightness(1.05) saturate(1.2)' : 'brightness(1) saturate(1)',\n    config: { tension: 150, friction: 15 },\n  });\n  \n  const emotionalAnimation = useSpring({\n    borderColor: emotionalAnalysis.currentEmotion ? \n      (emotionalAnalysis.currentEmotion.primary === 'excited' ? '#FFD700' :\n       emotionalAnalysis.currentEmotion.primary === 'gentle' ? '#87CEEB' :\n       emotionalAnalysis.currentEmotion.primary === 'wise' ? '#DDA0DD' : config.color) :\n      config.color,\n    boxShadow: speechRecognition.listening ? \n      `0 0 20px ${config.color}66, 0 0 40px ${config.color}33` :\n      `0 8px 32px ${config.color}33`,\n    config: { duration: 1000 }\n  });\n  \n  return (\n    <Box\n      sx={{\n        position: 'relative',\n        display: 'flex',\n        flexDirection: 'column',\n        alignItems: 'center',\n        cursor: interactive ? 'pointer' : 'default',\n        userSelect: 'none',\n      }}\n      onClick={() => interactive && handleAIInteraction()}\n      onMouseEnter={() => setIsHovered(true)}\n      onMouseLeave={() => setIsHovered(false)}\n    >\n      {/* Privacy Notice */}\n      {!privacy.consentGiven && (\n        <Alert \n          severity=\"info\" \n          sx={{ \n            position: 'absolute', \n            top: -60, \n            left: '50%', \n            transform: 'translateX(-50%)',\n            fontSize: '0.75rem',\n            maxWidth: 250\n          }}\n        >\n          Click to start AI conversation (parental consent may be required)\n        </Alert>\n      )}\n      \n      {/* AI Controls */}\n      {showControls && enableVoice && speechRecognition.supported && (\n        <Box\n          sx={{\n            position: 'absolute',\n            top: -45,\n            right: -25,\n            display: 'flex',\n            gap: 0.5,\n            zIndex: 10,\n          }}\n        >\n          <Tooltip title={speechRecognition.listening ? 'Stop Listening' : 'Start Voice Chat'}>\n            <IconButton\n              size=\"small\"\n              onClick={(e) => {\n                e.stopPropagation();\n                handleVoiceToggle();\n              }}\n              sx={{\n                width: 32,\n                height: 32,\n                backgroundColor: speechRecognition.listening ? '#FF9800' : '#2196F3',\n                color: 'white',\n                '&:hover': {\n                  backgroundColor: speechRecognition.listening ? '#F57C00' : '#1976D2',\n                },\n              }}\n            >\n              {speechRecognition.listening ? <MicOff fontSize=\"small\" /> : <Mic fontSize=\"small\" />}\n            </IconButton>\n          </Tooltip>\n          \n          <Tooltip title={voiceSynthesis.settings.enabled ? 'Mute Voice' : 'Enable Voice'}>\n            <IconButton\n              size=\"small\"\n              onClick={(e) => {\n                e.stopPropagation();\n                toggleVoice();\n              }}\n              sx={{\n                width: 32,\n                height: 32,\n                backgroundColor: voiceSynthesis.settings.enabled ? '#4CAF50' : '#9E9E9E',\n                color: 'white',\n                '&:hover': {\n                  backgroundColor: voiceSynthesis.settings.enabled ? '#388E3C' : '#757575',\n                },\n              }}\n            >\n              {voiceSynthesis.settings.enabled ? <VolumeUp fontSize=\"small\" /> : <VolumeOff fontSize=\"small\" />}\n            </IconButton>\n          </Tooltip>\n        </Box>\n      )}\n      \n      {/* Main Character */}\n      <animated.div\n        style={{\n          ...floatAnimation,\n          ...hoverAnimation,\n          ...speakingAnimation,\n        }}\n      >\n        <animated.div style={emotionalAnimation}>\n          <Box\n            sx={{\n              width: dimensions.width,\n              height: dimensions.height,\n              position: 'relative',\n              borderRadius: '50%',\n              background: `linear-gradient(135deg, ${config.gradientColors[0]}, ${config.gradientColors[1]})`,\n              display: 'flex',\n              alignItems: 'center',\n              justifyContent: 'center',\n              border: '3px solid',\n              borderColor: config.color,\n              transition: 'all 0.3s ease',\n              '&:hover': interactive ? {\n                transform: 'scale(1.02)',\n              } : {},\n            }}\n          >\n            {/* Character Emoji/Icon */}\n            <Box\n              sx={{\n                fontSize: dimensions.fontSize,\n                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',\n              }}\n            >\n              {config.emoji}\n            </Box>\n            \n            {/* Status Indicators */}\n            {voiceSynthesis.speaking && (\n              <Box\n                sx={{\n                  position: 'absolute',\n                  top: -5,\n                  right: -5,\n                  width: 18,\n                  height: 18,\n                  borderRadius: '50%',\n                  background: '#4CAF50',\n                  border: '2px solid white',\n                  animation: 'pulse 1s ease-in-out infinite',\n                  '@keyframes pulse': {\n                    '0%': { transform: 'scale(1)', opacity: 1 },\n                    '50%': { transform: 'scale(1.2)', opacity: 0.7 },\n                    '100%': { transform: 'scale(1)', opacity: 1 },\n                  },\n                }}\n              />\n            )}\n            \n            {speechRecognition.listening && (\n              <Box\n                sx={{\n                  position: 'absolute',\n                  top: -5,\n                  left: -5,\n                  width: 18,\n                  height: 18,\n                  borderRadius: '50%',\n                  background: '#FF9800',\n                  border: '2px solid white',\n                  animation: 'bounce 1s ease-in-out infinite',\n                  '@keyframes bounce': {\n                    '0%, 100%': { transform: 'translateY(0)' },\n                    '50%': { transform: 'translateY(-3px)' },\n                  },\n                }}\n              />\n            )}\n            \n            {currentInteraction.processing && (\n              <Box\n                sx={{\n                  position: 'absolute',\n                  bottom: -5,\n                  right: -5,\n                  width: 16,\n                  height: 16,\n                  borderRadius: '50%',\n                  background: '#2196F3',\n                  border: '2px solid white',\n                  display: 'flex',\n                  alignItems: 'center',\n                  justifyContent: 'center',\n                }}\n              >\n                <Psychology fontSize=\"inherit\" sx={{ fontSize: '10px', color: 'white' }} />\n              </Box>\n            )}\n            \n            {/* Emotion Indicator */}\n            {emotionalAnalysis.currentEmotion && (\n              <Box\n                sx={{\n                  position: 'absolute',\n                  bottom: -10,\n                  left: '50%',\n                  transform: 'translateX(-50%)',\n                  fontSize: '1rem',\n                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',\n                }}\n              >\n                {emotionalAnalysis.currentEmotion.primary === 'excited' && '🎉'}\n                {emotionalAnalysis.currentEmotion.primary === 'wise' && '🧙‍♂️'}\n                {emotionalAnalysis.currentEmotion.primary === 'gentle' && '😌'}\n                {emotionalAnalysis.currentEmotion.primary === 'curious' && '🌟'}\n                {emotionalAnalysis.currentEmotion.primary === 'happy' && '😊'}\n                {emotionalAnalysis.currentEmotion.primary === 'protective' && '🛡️'}\n              </Box>\n            )}\n          </Box>\n        </animated.div>\n      </animated.div>\n      \n      {/* Speech Transcript */}\n      {speechRecognition.transcript && speechRecognition.listening && (\n        <Fade in timeout={200}>\n          <Box\n            sx={{\n              position: 'absolute',\n              top: -90,\n              left: '50%',\n              transform: 'translateX(-50%)',\n              background: 'rgba(255, 255, 255, 0.95)',\n              backdropFilter: 'blur(10px)',\n              borderRadius: 2,\n              padding: 1.5,\n              maxWidth: 250,\n              textAlign: 'center',\n              boxShadow: '0 4px 16px rgba(0,0,0,0.1)',\n              border: `1px solid ${config.color}`,\n            }}\n          >\n            <Typography variant=\"caption\" sx={{ color: config.color, fontWeight: 500 }}>\n              \"{speechRecognition.transcript}\"\n            </Typography>\n          </Box>\n        </Fade>\n      )}\n      \n      {/* Greeting */}\n      {showGreeting && currentGreeting && (\n        <Fade in timeout={500}>\n          <Box\n            sx={{\n              position: 'absolute',\n              top: speechRecognition.transcript ? -140 : -90,\n              left: '50%',\n              transform: 'translateX(-50%)',\n              background: 'rgba(255, 255, 255, 0.95)',\n              backdropFilter: 'blur(10px)',\n              borderRadius: 3,\n              padding: 2,\n              maxWidth: 280,\n              textAlign: 'center',\n              boxShadow: '0 4px 16px rgba(0,0,0,0.1)',\n              border: `1px solid ${config.color}`,\n              zIndex: 5,\n              '&::after': {\n                content: '\"\"',\n                position: 'absolute',\n                bottom: -8,\n                left: '50%',\n                transform: 'translateX(-50%)',\n                width: 0,\n                height: 0,\n                borderLeft: '8px solid transparent',\n                borderRight: '8px solid transparent',\n                borderTop: '8px solid rgba(255, 255, 255, 0.95)',\n              },\n            }}\n          >\n            <Typography\n              variant={size === 'large' ? 'body1' : 'body2'}\n              sx={{\n                color: config.color,\n                fontWeight: 500,\n                lineHeight: 1.4,\n              }}\n            >\n              {currentGreeting}\n            </Typography>\n          </Box>\n        </Fade>\n      )}\n      \n      {/* AI Response */}\n      {aiResponse && (\n        <Fade in timeout={500}>\n          <Box\n            sx={{\n              position: 'absolute',\n              top: (showGreeting || speechRecognition.transcript) ? -180 : -90,\n              left: '50%',\n              transform: 'translateX(-50%)',\n              background: `${config.color}DD`,\n              color: 'white',\n              borderRadius: 3,\n              padding: 2,\n              maxWidth: 320,\n              textAlign: 'center',\n              boxShadow: '0 4px 16px rgba(0,0,0,0.2)',\n              zIndex: 10,\n              '&::after': {\n                content: '\"\"',\n                position: 'absolute',\n                bottom: -8,\n                left: '50%',\n                transform: 'translateX(-50%)',\n                width: 0,\n                height: 0,\n                borderLeft: '8px solid transparent',\n                borderRight: '8px solid transparent',\n                borderTop: `8px solid ${config.color}DD`,\n              },\n            }}\n          >\n            <Typography\n              variant={size === 'large' ? 'body1' : 'body2'}\n              sx={{\n                fontWeight: 500,\n                lineHeight: 1.4,\n              }}\n            >\n              {aiResponse}\n            </Typography>\n          </Box>\n        </Fade>\n      )}\n      \n      {/* Interactive Hints */}\n      {interactive && isHovered && !currentInteraction.processing && (\n        <Fade in timeout={200}>\n          <Typography\n            variant=\"caption\"\n            sx={{\n              mt: 1,\n              color: config.color,\n              fontWeight: 500,\n              textAlign: 'center',\n              display: 'flex',\n              alignItems: 'center',\n              gap: 0.5,\n            }}\n          >\n            <Chat fontSize=\"inherit\" />\n            Click to chat with {config.name}\n          </Typography>\n        </Fade>\n      )}\n      \n      {currentInteraction.processing && (\n        <Fade in timeout={200}>\n          <Typography\n            variant=\"caption\"\n            sx={{\n              mt: 1,\n              color: '#2196F3',\n              fontWeight: 500,\n              textAlign: 'center',\n              display: 'flex',\n              alignItems: 'center',\n              gap: 0.5,\n            }}\n          >\n            <Psychology fontSize=\"inherit\" />\n            {config.name} is thinking...\n          </Typography>\n        </Fade>\n      )}\n      \n      {/* Performance indicator for debugging */}\n      {process.env.NODE_ENV === 'development' && performance.averageResponseTime > 0 && (\n        <Typography\n          variant=\"caption\"\n          sx={{\n            position: 'absolute',\n            bottom: -40,\n            fontSize: '0.7rem',\n            color: '#666',\n            textAlign: 'center',\n          }}\n        >\n          Avg: {Math.round(performance.averageResponseTime)}ms\n        </Typography>\n      )}\n    </Box>\n  );\n};\n\nexport default AIIntegratedCharacter;
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Box, Typography, Fade, IconButton, Tooltip, Alert } from '@mui/material';
+import { Mic, MicOff, VolumeUp, VolumeOff, Psychology, Chat } from '@mui/icons-material';
+import { animated, useSpring } from '@react-spring/web';
+
+import { speechRecognitionService } from '../../services/speechRecognitionService';
+import { emotionalAIService } from '../../services/emotionalAIService';
+import { askOldTomService } from '../../services/askOldTomService';
+import { privacyService } from '../../services/privacyService';
+
+interface AIIntegratedCharacterProps {
+  characterId: 'old-tom' | 'george-davidson' | 'child-narrator';
+  position?: 'left' | 'center' | 'right';
+  size?: 'small' | 'medium' | 'large';
+  interactive?: boolean;
+  enableVoice?: boolean;
+  enableEmotionalAI?: boolean;
+  context?: string;
+  childAge?: number;
+  onAIResponse?: (response: string) => void;
+  showControls?: boolean;
+  autoInitialize?: boolean;
+}
+
+const characterConfig = {
+  'old-tom': {
+    name: 'Old Tom',
+    emoji: '🐋',
+    color: '#1565C0',
+    gradientColors: ['rgba(21, 101, 192, 0.1)', 'rgba(2, 119, 189, 0.2)'],
+    greetings: [
+      "Welcome to my ocean realm, young explorer!",
+      "The tides have brought you to me...",
+      "Ah, another soul seeking stories from the deep!",
+      "Come closer, and I'll share the ocean's secrets."
+    ]
+  },
+  'george-davidson': {
+    name: 'George Davidson',
+    emoji: '⚓',
+    color: '#8D6E63',
+    gradientColors: ['rgba(141, 110, 99, 0.1)', 'rgba(121, 85, 72, 0.2)'],
+    greetings: [
+      "G'day there, young mate! Welcome aboard our story.",
+      "Well hello there, little sailor! Ready to hear some tales?",
+      "Ah, a curious young soul! Come here and I'll tell you about the old days."
+    ]
+  },
+  'child-narrator': {
+    name: 'Young Explorer',
+    emoji: '👦',
+    color: '#FF9800',
+    gradientColors: ['rgba(255, 152, 0, 0.1)', 'rgba(245, 124, 0, 0.2)'],
+    greetings: [
+      "Oh wow! Are you here to learn about Old Tom too?",
+      "Hi there! I can't wait to show you what I've discovered!",
+      "Welcome! You're going to love meeting Old Tom!"
+    ]
+  }
+};
+
+export const AIIntegratedCharacter: React.FC<AIIntegratedCharacterProps> = ({
+  characterId,
+  position = 'center',
+  size = 'medium',
+  interactive = true,
+  enableVoice = true,
+  enableEmotionalAI = true,
+  context = 'general',
+  childAge,
+  onAIResponse,
+  showControls = true,
+  autoInitialize = true
+}) => {
+  const config = characterConfig[characterId];
+  
+  // Local state management (replacing Redux)
+  const [isHovered, setIsHovered] = useState(false);
+  const [showGreeting, setShowGreeting] = useState(false);
+  const [currentGreeting, setCurrentGreeting] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speechTranscript, setSpeechTranscript] = useState('');
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [currentEmotion, setCurrentEmotion] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [privacyConsent, setPrivacyConsent] = useState(false);
+  const [averageResponseTime, setAverageResponseTime] = useState(0);
+  
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Size configurations
+  const sizeConfig = {
+    small: { width: 80, height: 80, fontSize: '1.5rem' },
+    medium: { width: 150, height: 150, fontSize: '2rem' },
+    large: { width: 200, height: 200, fontSize: '3rem' },
+  };
+  const dimensions = sizeConfig[size];
+  
+  // Position configurations
+  const positionStyles = {
+    left: { position: 'absolute' as const, left: 20, top: '50%', transform: 'translateY(-50%)' },
+    center: { position: 'relative' as const, margin: '0 auto' },
+    right: { position: 'absolute' as const, right: 20, top: '50%', transform: 'translateY(-50%)' }
+  };
+  
+  // Initialize AI session
+  useEffect(() => {
+    if (autoInitialize && !sessionId) {
+      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      setSessionId(newSessionId);
+      
+      // Show greeting after initialization
+      setTimeout(() => {
+        const greeting = config.greetings[Math.floor(Math.random() * config.greetings.length)];
+        setCurrentGreeting(greeting);
+        setShowGreeting(true);
+        
+        // Auto-hide greeting
+        setTimeout(() => setShowGreeting(false), 5000);
+      }, 1000);
+    }
+  }, [autoInitialize, sessionId, config.greetings]);
+  
+  // Speech recognition setup
+  useEffect(() => {
+    if (!enableVoice) return;
+    
+    const handleSpeechResult = (result: any) => {
+      setSpeechTranscript(result.transcript);
+      
+      if (result.isFinal && result.transcript.trim()) {
+        handleVoiceInput(result.transcript);
+      }
+    };
+    
+    const handleSpeechError = (error: Error) => {
+      console.error('Speech recognition error:', error);
+      setIsListening(false);
+    };
+    
+    speechRecognitionService.addListener('result', handleSpeechResult);
+    speechRecognitionService.addErrorListener(handleSpeechError);
+    
+    return () => {
+      speechRecognitionService.removeListener('result', handleSpeechResult);
+      speechRecognitionService.removeErrorListener(handleSpeechError);
+    };
+  }, [enableVoice]);
+  
+  // Handle AI interactions
+  const handleAIInteraction = useCallback(async (inputText?: string, interactionType: string = 'casual_chat') => {
+    if (isProcessing) return;
+    
+    // Check privacy consent first
+    if (!privacyConsent) {
+      try {
+        const consent = await privacyService.requestConsent({
+          childAge: childAge || 7,
+          requiredConsents: ['basic_interaction', 'character_chat']
+        });
+        setPrivacyConsent(consent);
+        if (!consent) return;
+      } catch (error) {
+        console.error('Privacy consent failed:', error);
+        return;
+      }
+    }
+    
+    setIsProcessing(true);
+    const startTime = Date.now();
+    
+    try {
+      const response = await askOldTomService.askOldTom({
+        question: inputText || `Hello ${config.name}!`,
+        childAge: childAge || 7,
+        sessionId: sessionId || '',
+        context: {
+          currentEmotion: currentEmotion,
+          previousTopics: [],
+          learningLevel: 'beginner'
+        },
+        inputMethod: inputText ? 'text' : 'gesture'
+      });
+      
+      if (response.textResponse) {
+        setAiResponse(response.textResponse);
+        onAIResponse?.(response.textResponse);
+        
+        // Update emotional state if available
+        if (response.emotion) {
+          setCurrentEmotion(response.emotion);
+        }
+        
+        // Auto-hide AI response after 8 seconds
+        setTimeout(() => setAiResponse(''), 8000);
+        
+        // Handle voice synthesis if enabled
+        if (enableVoice && voiceEnabled && response.textResponse) {
+          playAudioResponse(response.textResponse);
+        }
+      }
+      
+      // Update performance metrics
+      const responseTime = Date.now() - startTime;
+      setAverageResponseTime(prev => prev === 0 ? responseTime : (prev + responseTime) / 2);
+      
+    } catch (error) {
+      console.error('AI interaction failed:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [isProcessing, privacyConsent, childAge, sessionId, config.name, currentEmotion, onAIResponse, enableVoice, voiceEnabled]);
+  
+  const handleVoiceInput = useCallback(async (transcript: string) => {
+    await handleAIInteraction(transcript, 'question');
+  }, [handleAIInteraction]);
+  
+  const handleVoiceToggle = useCallback(async () => {
+    if (!enableVoice) return;
+    
+    if (isListening) {
+      speechRecognitionService.stop();
+      setIsListening(false);
+    } else {
+      try {
+        await speechRecognitionService.start({
+          continuous: true,
+          interimResults: true,
+          language: 'en-US'
+        });
+        setIsListening(true);
+      } catch (error) {
+        console.error('Speech recognition start failed:', error);
+      }
+    }
+  }, [enableVoice, isListening]);
+  
+  const playAudioResponse = useCallback((text: string) => {
+    if ('speechSynthesis' in window && voiceEnabled) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Character-specific voice settings
+      if (characterId === 'old-tom') {
+        utterance.rate = 0.7;
+        utterance.pitch = 0.6;
+      } else if (characterId === 'george-davidson') {
+        utterance.rate = 0.8;
+        utterance.pitch = 0.8;
+      } else if (characterId === 'child-narrator') {
+        utterance.rate = 1.0;
+        utterance.pitch = 1.2;
+      }
+      
+      utterance.volume = 0.7;
+      
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      
+      speechSynthesis.speak(utterance);
+    }
+  }, [characterId, voiceEnabled]);
+  
+  const toggleVoice = useCallback(() => {
+    setVoiceEnabled(!voiceEnabled);
+  }, [voiceEnabled]);
+  
+  // Animations
+  const floatAnimation = useSpring({
+    from: { transform: 'translateY(0px)' },
+    to: async (next) => {
+      while (true) {
+        await next({ transform: 'translateY(-8px)' });
+        await next({ transform: 'translateY(0px)' });
+      }
+    },
+    config: { duration: 3000 },
+  });
+  
+  const hoverAnimation = useSpring({
+    transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+    filter: isHovered ? 'brightness(1.1)' : 'brightness(1)',
+    config: { tension: 200, friction: 20 },
+  });
+  
+  const speakingAnimation = useSpring({
+    transform: isSpeaking ? 'scale(1.02)' : 'scale(1)',
+    filter: isSpeaking ? 'brightness(1.05) saturate(1.2)' : 'brightness(1) saturate(1)',
+    config: { tension: 150, friction: 15 },
+  });
+  
+  const emotionalAnimation = useSpring({
+    borderColor: currentEmotion ? 
+      (currentEmotion === 'excited' ? '#FFD700' :
+       currentEmotion === 'gentle' ? '#87CEEB' :
+       currentEmotion === 'wise' ? '#DDA0DD' : config.color) :
+      config.color,
+    boxShadow: isListening ? 
+      `0 0 20px ${config.color}66, 0 0 40px ${config.color}33` :
+      `0 8px 32px ${config.color}33`,
+    config: { duration: 1000 }
+  });
+  
+  return (
+    <Box
+      sx={{
+        ...positionStyles[position],
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        cursor: interactive ? 'pointer' : 'default',
+        userSelect: 'none',
+        zIndex: 10,
+      }}
+      onClick={() => interactive && handleAIInteraction()}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Privacy Notice */}
+      {!privacyConsent && (
+        <Alert 
+          severity="info" 
+          sx={{ 
+            position: 'absolute', 
+            top: -60, 
+            left: '50%', 
+            transform: 'translateX(-50%)',
+            fontSize: '0.75rem',
+            maxWidth: 250
+          }}
+        >
+          Click to start AI conversation (parental consent may be required)
+        </Alert>
+      )}
+      
+      {/* AI Controls */}
+      {showControls && enableVoice && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -45,
+            right: -25,
+            display: 'flex',
+            gap: 0.5,
+            zIndex: 10,
+          }}
+        >
+          <Tooltip title={isListening ? 'Stop Listening' : 'Start Voice Chat'}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleVoiceToggle();
+              }}
+              sx={{
+                width: 32,
+                height: 32,
+                backgroundColor: isListening ? '#FF9800' : '#2196F3',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: isListening ? '#F57C00' : '#1976D2',
+                },
+              }}
+            >
+              {isListening ? <MicOff fontSize="small" /> : <Mic fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+          
+          <Tooltip title={voiceEnabled ? 'Mute Voice' : 'Enable Voice'}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleVoice();
+              }}
+              sx={{
+                width: 32,
+                height: 32,
+                backgroundColor: voiceEnabled ? '#4CAF50' : '#9E9E9E',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: voiceEnabled ? '#388E3C' : '#757575',
+                },
+              }}
+            >
+              {voiceEnabled ? <VolumeUp fontSize="small" /> : <VolumeOff fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
+      
+      {/* Main Character */}
+      <animated.div
+        style={{
+          ...floatAnimation,
+          ...hoverAnimation,
+          ...speakingAnimation,
+        }}
+      >
+        <animated.div style={emotionalAnimation}>
+          <Box
+            sx={{
+              width: dimensions.width,
+              height: dimensions.height,
+              position: 'relative',
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${config.gradientColors[0]}, ${config.gradientColors[1]})`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '3px solid',
+              borderColor: config.color,
+              transition: 'all 0.3s ease',
+              '&:hover': interactive ? {
+                transform: 'scale(1.02)',
+              } : {},
+            }}
+          >
+            {/* Character Emoji/Icon */}
+            <Box
+              sx={{
+                fontSize: dimensions.fontSize,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+              }}
+            >
+              {config.emoji}
+            </Box>
+            
+            {/* Status Indicators */}
+            {isSpeaking && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: -5,
+                  right: -5,
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  background: '#4CAF50',
+                  border: '2px solid white',
+                  animation: 'pulse 1s ease-in-out infinite',
+                  '@keyframes pulse': {
+                    '0%': { transform: 'scale(1)', opacity: 1 },
+                    '50%': { transform: 'scale(1.2)', opacity: 0.7 },
+                    '100%': { transform: 'scale(1)', opacity: 1 },
+                  },
+                }}
+              />
+            )}
+            
+            {isListening && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: -5,
+                  left: -5,
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  background: '#FF9800',
+                  border: '2px solid white',
+                  animation: 'bounce 1s ease-in-out infinite',
+                  '@keyframes bounce': {
+                    '0%, 100%': { transform: 'translateY(0)' },
+                    '50%': { transform: 'translateY(-3px)' },
+                  },
+                }}
+              />
+            )}
+            
+            {isProcessing && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: -5,
+                  right: -5,
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  background: '#2196F3',
+                  border: '2px solid white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Psychology fontSize="inherit" sx={{ fontSize: '10px', color: 'white' }} />
+              </Box>
+            )}
+            
+            {/* Emotion Indicator */}
+            {currentEmotion && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: -10,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  fontSize: '1rem',
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+                }}
+              >
+                {currentEmotion === 'excited' && '🎉'}
+                {currentEmotion === 'wise' && '🧙‍♂️'}
+                {currentEmotion === 'gentle' && '😌'}
+                {currentEmotion === 'curious' && '🌟'}
+                {currentEmotion === 'happy' && '😊'}
+                {currentEmotion === 'protective' && '🛡️'}
+              </Box>
+            )}
+          </Box>
+        </animated.div>
+      </animated.div>
+      
+      {/* Speech Transcript */}
+      {speechTranscript && isListening && (
+        <Fade in timeout={200}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: -90,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: 2,
+              padding: 1.5,
+              maxWidth: 250,
+              textAlign: 'center',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+              border: `1px solid ${config.color}`,
+            }}
+          >
+            <Typography variant="caption" sx={{ color: config.color, fontWeight: 500 }}>
+              "{speechTranscript}"
+            </Typography>
+          </Box>
+        </Fade>
+      )}
+      
+      {/* Greeting */}
+      {showGreeting && currentGreeting && (
+        <Fade in timeout={500}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: speechTranscript ? -140 : -90,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: 3,
+              padding: 2,
+              maxWidth: 280,
+              textAlign: 'center',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+              border: `1px solid ${config.color}`,
+              zIndex: 5,
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: -8,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 0,
+                height: 0,
+                borderLeft: '8px solid transparent',
+                borderRight: '8px solid transparent',
+                borderTop: '8px solid rgba(255, 255, 255, 0.95)',
+              },
+            }}
+          >
+            <Typography
+              variant={size === 'large' ? 'body1' : 'body2'}
+              sx={{
+                color: config.color,
+                fontWeight: 500,
+                lineHeight: 1.4,
+              }}
+            >
+              {currentGreeting}
+            </Typography>
+          </Box>
+        </Fade>
+      )}
+      
+      {/* AI Response */}
+      {aiResponse && (
+        <Fade in timeout={500}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: (showGreeting || speechTranscript) ? -180 : -90,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: `${config.color}DD`,
+              color: 'white',
+              borderRadius: 3,
+              padding: 2,
+              maxWidth: 320,
+              textAlign: 'center',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+              zIndex: 10,
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: -8,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 0,
+                height: 0,
+                borderLeft: '8px solid transparent',
+                borderRight: '8px solid transparent',
+                borderTop: `8px solid ${config.color}DD`,
+              },
+            }}
+          >
+            <Typography
+              variant={size === 'large' ? 'body1' : 'body2'}
+              sx={{
+                fontWeight: 500,
+                lineHeight: 1.4,
+              }}
+            >
+              {aiResponse}
+            </Typography>
+          </Box>
+        </Fade>
+      )}
+      
+      {/* Interactive Hints */}
+      {interactive && isHovered && !isProcessing && (
+        <Fade in timeout={200}>
+          <Typography
+            variant="caption"
+            sx={{
+              mt: 1,
+              color: config.color,
+              fontWeight: 500,
+              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+            }}
+          >
+            <Chat fontSize="inherit" />
+            Click to chat with {config.name}
+          </Typography>
+        </Fade>
+      )}
+      
+      {isProcessing && (
+        <Fade in timeout={200}>
+          <Typography
+            variant="caption"
+            sx={{
+              mt: 1,
+              color: '#2196F3',
+              fontWeight: 500,
+              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+            }}
+          >
+            <Psychology fontSize="inherit" />
+            {config.name} is thinking...
+          </Typography>
+        </Fade>
+      )}
+      
+      {/* Performance indicator for debugging */}
+      {process.env.NODE_ENV === 'development' && averageResponseTime > 0 && (
+        <Typography
+          variant="caption"
+          sx={{
+            position: 'absolute',
+            bottom: -40,
+            fontSize: '0.7rem',
+            color: '#666',
+            textAlign: 'center',
+          }}
+        >
+          Avg: {Math.round(averageResponseTime)}ms
+        </Typography>
+      )}
+    </Box>
+  );
+};
+
+export default AIIntegratedCharacter;
