@@ -46,6 +46,22 @@ const theme = createTheme({
       primary: '#F5F5DC', // Beige
       secondary: '#D4AF37', // Gold
     },
+    // Custom Studio Ghibli palette colors
+    ocean: {
+      main: '#1565C0',
+      light: '#42A5F5',
+      dark: '#0D47A1',
+    },
+    sunset: {
+      main: '#FF7043',
+      light: '#FFAB91',
+      dark: '#D84315',
+    },
+    forest: {
+      main: '#388E3C',
+      light: '#66BB6A',
+      dark: '#1B5E20',
+    },
   },
   typography: {
     fontFamily: '"Cinzel", "Playfair Display", "Times New Roman", serif',
