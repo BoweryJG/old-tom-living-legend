@@ -162,7 +162,8 @@ const StoryPage: React.FC = () => {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
-        overflow: 'hidden',
+        overflowX: 'hidden',
+        overflowY: 'auto',
       }}
     >
       {/* 3D Ocean Environment */}
@@ -200,6 +201,8 @@ const StoryPage: React.FC = () => {
             justifyContent: 'center',
             minHeight: '100vh',
             padding: 3,
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            backdropFilter: 'blur(2px)',
           }}
         >
         {/* Title */}
@@ -207,12 +210,10 @@ const StoryPage: React.FC = () => {
           <Typography 
             variant="h1" 
             sx={{
-              fontSize: { xs: '3rem', md: '4.5rem' },
-              background: 'linear-gradient(45deg, #F5F5DC 30%, #D4AF37 70%)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: '3px 3px 6px rgba(0,0,0,0.7)',
+              fontSize: { xs: '4rem', md: '6rem' },
+              color: '#FFFFFF',
+              textShadow: '4px 4px 8px rgba(0,0,0,0.9)',
+              fontWeight: 'bold',
               mb: 2,
             }}
           >
@@ -222,10 +223,11 @@ const StoryPage: React.FC = () => {
           <Typography 
             variant="h2" 
             sx={{
-              fontSize: { xs: '1.5rem', md: '2.5rem' },
-              color: '#D4AF37',
-              textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+              fontSize: { xs: '2rem', md: '3rem' },
+              color: '#FFD700',
+              textShadow: '3px 3px 6px rgba(0,0,0,0.8)',
               fontStyle: 'italic',
+              fontWeight: 'bold',
             }}
           >
             The Living Legend of Eden Bay
@@ -246,18 +248,19 @@ const StoryPage: React.FC = () => {
             onClick={handleTalkToOldTom}
             disabled={isOldTomSpeaking}
             sx={{
-              background: 'linear-gradient(45deg, #2E8B57 30%, #4CAF50 90%)',
-              color: '#F5F5DC',
-              fontSize: '1.3rem',
-              fontWeight: 600,
-              padding: '18px 36px',
-              borderRadius: 4,
+              background: 'linear-gradient(45deg, #FF6B35 30%, #F7931E 90%)',
+              color: '#FFFFFF',
+              fontSize: '2rem',
+              fontWeight: 800,
+              padding: '24px 48px',
+              borderRadius: 8,
               textTransform: 'none',
-              boxShadow: '0 8px 32px rgba(46, 139, 87, 0.4)',
-              border: '2px solid rgba(212, 175, 55, 0.5)',
+              boxShadow: '0 12px 40px rgba(255, 107, 53, 0.6)',
+              border: '4px solid #FFFFFF',
               '&:hover': {
-                background: 'linear-gradient(45deg, #4CAF50 30%, #2E8B57 90%)',
-                transform: 'translateY(-3px)',
+                background: 'linear-gradient(45deg, #FF8C42 30%, #FFA726 90%)',
+                transform: 'translateY(-5px) scale(1.05)',
+                boxShadow: '0 16px 50px rgba(255, 107, 53, 0.8)',
               },
               '&:disabled': {
                 background: 'linear-gradient(45deg, #555 30%, #777 90%)',
@@ -273,18 +276,21 @@ const StoryPage: React.FC = () => {
             size="large"
             onClick={handleOpenChat}
             sx={{
-              color: '#D4AF37',
-              borderColor: 'rgba(212, 175, 55, 0.7)',
-              fontSize: '1.3rem',
-              fontWeight: 600,
-              padding: '18px 36px',
-              borderRadius: 4,
+              color: '#FFFFFF',
+              borderColor: '#FFFFFF',
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              fontSize: '2rem',
+              fontWeight: 800,
+              padding: '24px 48px',
+              borderRadius: 8,
               textTransform: 'none',
-              borderWidth: 2,
+              borderWidth: 4,
+              boxShadow: '0 8px 32px rgba(255,255,255,0.3)',
               '&:hover': {
-                borderColor: '#D4AF37',
-                background: 'rgba(212, 175, 55, 0.15)',
-                transform: 'translateY(-3px)',
+                borderColor: '#FFD700',
+                backgroundColor: 'rgba(255,215,0,0.2)',
+                transform: 'translateY(-5px) scale(1.05)',
+                boxShadow: '0 12px 40px rgba(255,215,0,0.5)',
               }
             }}
           >
