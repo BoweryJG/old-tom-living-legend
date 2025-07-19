@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events';
 // @ts-nocheck
 // @ts-ignore
-import { getAgentList } from '../components/ChatbotLauncher/agents/agentConfigs';
 
 // Global agentConfigs fallback
 let agentConfigs: any = {};

@@ -1,5 +1,5 @@
 import React, { useRef, useMemo, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { Points, PointMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -116,7 +116,7 @@ const WhaleSongParticles: React.FC = () => {
 // Ocean surface with gentle waves
 const OceanSurface: React.FC = () => {
   const meshRef = useRef<THREE.Mesh>(null);
-  const { viewport } = useThree();
+  // const { viewport } = useThree(); // Unused for now
 
   useFrame((state) => {
     if (meshRef.current) {

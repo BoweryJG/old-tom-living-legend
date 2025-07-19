@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Box, IconButton, Slider, Paper, Typography, Tooltip } from '@mui/material';
 import {
   VolumeUp,
-  VolumeOff,
   PlayArrow,
   Pause,
   MusicNote,
@@ -34,7 +33,7 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
 }) => {
   const [masterVolume, setMasterVolume] = useState(volume);
   const [isMusicPlaying, setIsMusicPlaying] = useState(isPlaying);
-  const [currentTrack, setCurrentTrack] = useState<AudioTrack | null>(null);
+  // const [currentTrack] = useState<AudioTrack | null>(null); // Unused for now
   const [isControlsVisible, setIsControlsVisible] = useState(false);
   const [audioLayers, setAudioLayers] = useState<Map<string, HTMLAudioElement>>(new Map());
 
@@ -42,7 +41,7 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
   const gainNodesRef = useRef<Map<string, GainNode>>(new Map());
 
   // Studio Ghibli-inspired orchestral tracks (using Web Audio API for layering)
-  const orchestralLayers: AudioTrack[] = [
+  const orchestralLayers = useMemo((): AudioTrack[] => [
     // Base atmospheric layers
     {
       id: 'ocean-ambience',
@@ -112,7 +111,7 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
       volume: 0.4,
       isLoop: true
     }
-  ];
+  ], []);
 
   // Initialize Web Audio Context and create audio layers
   useEffect(() => {
@@ -165,6 +164,7 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
         audioContextRef.current.close();
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fallback to HTML5 audio if Web Audio API fails
@@ -226,7 +226,7 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
     if (audioLayers.size > 0) {
       updateLayerVolumes();
     }
-  }, [currentMood, masterVolume, isMusicPlaying, audioLayers]);
+  }, [currentMood, masterVolume, isMusicPlaying, audioLayers, orchestralLayers]);
 
   const handleVolumeChange = (_: Event, newValue: number | number[]) => {
     const volume = Array.isArray(newValue) ? newValue[0] : newValue;

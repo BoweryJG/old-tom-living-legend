@@ -20,7 +20,7 @@ const OldTomCharacter: React.FC<OldTomCharacterProps> = ({
   onAnimationComplete
 }) => {
   const [currentAnimation, setCurrentAnimation] = useState(animationType);
-  const [isBreathing, setIsBreathing] = useState(true);
+  const [isBreathing] = useState(true);
 
   useEffect(() => {
     setCurrentAnimation(animationType);
