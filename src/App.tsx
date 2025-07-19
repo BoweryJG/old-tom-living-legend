@@ -8,8 +8,10 @@ import { Box, Typography, Button } from '@mui/material';
 import OceanParticles from './components/OceanParticles';
 import OldTomCharacter from './components/OldTomCharacter';
 import OldTomChat from './components/OldTomChat';
+import OrchestraManager from './components/OrchestraManager';
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { ElevenLabsTTSService } from './services/elevenLabsTTS';
 
 // Create Studio Ghibli + Antique Marine theme
 const theme = createTheme({
@@ -67,11 +69,15 @@ const theme = createTheme({
   spacing: 8,
 });
 
+// Initialize Old Tom's voice service
+const oldTomVoice = new ElevenLabsTTSService();
+
 // Main Story/Home Page
 const StoryPage: React.FC = () => {
   const [oldTomAnimation, setOldTomAnimation] = useState<'idle' | 'speaking' | 'greeting'>('idle');
   const [chatVisible, setChatVisible] = useState(false);
   const [isOldTomSpeaking, setIsOldTomSpeaking] = useState(false);
+  const [currentMood, setCurrentMood] = useState<'peaceful' | 'mysterious' | 'adventurous' | 'nostalgic' | 'dramatic'>('peaceful');
   const [, setUserInteracted] = useState(false);
 
   const handleTalkToOldTom = async () => {
@@ -79,16 +85,31 @@ const StoryPage: React.FC = () => {
     
     setIsOldTomSpeaking(true);
     setOldTomAnimation('greeting');
+    setCurrentMood('adventurous');
     setUserInteracted(true);
     
-    setTimeout(() => {
-      setOldTomAnimation('speaking');
-    }, 1000);
+    try {
+      await oldTomVoice.initialize();
+      
+      setTimeout(() => {
+        setOldTomAnimation('speaking');
+      }, 1000);
+      
+      const greetingText = `Ahoy there, young navigator! I am Old Tom, the great orca of Eden Bay. 
+        For decades, my pod and I worked alongside the Davidson whalers in the ancient partnership 
+        known as the "Law of the Tongue." Would you like to hear tales of our adventures 
+        beneath the Southern Ocean waves?`;
+      
+      await oldTomVoice.streamTextToSpeech(greetingText, 'old-tom');
+    } catch (error) {
+      console.error('Error with Old Tom voice:', error);
+    }
     
     setTimeout(() => {
       setIsOldTomSpeaking(false);
       setOldTomAnimation('idle');
-    }, 5000);
+      setCurrentMood('peaceful');
+    }, 8000);
   };
 
   const handleOpenChat = () => {
@@ -227,6 +248,14 @@ const StoryPage: React.FC = () => {
       <OldTomChat 
         open={chatVisible} 
         onClose={() => setChatVisible(false)} 
+      />
+
+      {/* Orchestra Manager for Music */}
+      <OrchestraManager
+        currentMood={currentMood}
+        isPlaying={true}
+        volume={0.3}
+        onMoodChange={(mood) => setCurrentMood(mood as any)}
       />
     </Box>
   );
