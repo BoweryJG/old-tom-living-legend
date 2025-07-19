@@ -290,16 +290,13 @@ const HomePage: React.FC = () => {
               ))}
             </Box>
 
-            {/* DEBUG: Simple test button */}
+            {/* Talk to Old Tom Button */}
             <Box sx={{ 
               mt: 6, 
               display: 'flex', 
               gap: 3, 
               flexWrap: 'wrap', 
-              justifyContent: 'center',
-              background: 'red', // DEBUG: Make visible
-              padding: 2,
-              borderRadius: 2
+              justifyContent: 'center'
             }}>
               <Button
                 variant="contained"
@@ -436,7 +433,7 @@ const App: React.FC = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       {/* 3D Ocean Particles Background */}
-      {/* <OceanParticles intensity="high" /> */}
+      <OceanParticles intensity="high" />
       <Router>
         <Routes>
           <Route path="/" element={<HomePage />} />
