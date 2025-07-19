@@ -9,6 +9,16 @@ import OceanParticles from './components/OceanParticles';
 import OldTomCharacter from './components/OldTomCharacter';
 import OldTomChat from './components/OldTomChat';
 import OrchestraManager from './components/OrchestraManager';
+import AIIntegratedCharacter from './components/ai/AIIntegratedCharacter';
+import AskOldTomInterface from './components/ai/AskOldTomInterface';
+import { EmotionalFeedbackSystem } from './components/emotional/EmotionalFeedbackSystem';
+import { OldTomComfortCharacter } from './components/emotional/OldTomComfortCharacter';
+import { EducationalProgressTracker } from './components/education/EducationalProgressTracker';
+import { CelebrationAnimations } from './components/education/CelebrationAnimations';
+import { MagicalGestureRecognizer } from './components/interactions/MagicalGestureRecognizer';
+import { OceanSurfaceInteraction } from './components/interactions/OceanSurfaceInteraction';
+import { ChildFriendlyNavigation } from './components/navigation/ChildFriendlyNavigation';
+import { StoryBreadcrumbs } from './components/navigation/StoryBreadcrumbs';
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ElevenLabsTTSService } from './services/elevenLabsTTS';
@@ -78,6 +88,14 @@ const StoryPage: React.FC = () => {
   const [chatVisible, setChatVisible] = useState(false);
   const [isOldTomSpeaking, setIsOldTomSpeaking] = useState(false);
   const [currentMood, setCurrentMood] = useState<'peaceful' | 'mysterious' | 'adventurous' | 'nostalgic' | 'dramatic'>('peaceful');
+  const [showCelebration, setShowCelebration] = useState<{ type: 'achievement' | 'learning' | 'discovery' | 'mastery' | 'friendship'; visible: boolean } | null>(null);
+  const [emotionalState, setEmotionalState] = useState({
+    comfort: 5,
+    engagement: 4,
+    confidence: 4,
+    needsSupport: false,
+    preferredPace: 'normal' as 'slow' | 'normal' | 'fast',
+  });
   const [, setUserInteracted] = useState(false);
 
   const handleTalkToOldTom = async () => {
@@ -130,19 +148,40 @@ const StoryPage: React.FC = () => {
       {/* 3D Ocean Environment */}
       <OceanParticles intensity="high" />
       
-      {/* Main Content Container */}
-      <Box
-        sx={{
-          position: 'relative',
-          zIndex: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          padding: 3,
+      {/* Child-Friendly Navigation */}
+      <ChildFriendlyNavigation
+        currentProgress={{
+          totalSteps: 10,
+          completedSteps: 3,
+          currentChapter: "Meeting Old Tom"
         }}
+        onSettingsOpen={() => {}}
+        onHelpOpen={() => {}}
+      />
+
+      {/* Magical Gesture Recognition */}
+      <MagicalGestureRecognizer
+        onGesture={(gesture) => {
+          console.log('Magical gesture:', gesture);
+          if (gesture === 'wave_hello') {
+            handleTalkToOldTom();
+          }
+        }}
+        enableMagicalFeedback={true}
       >
+        {/* Main Content Container */}
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            padding: 3,
+          }}
+        >
         {/* Title */}
         <Box sx={{ textAlign: 'center', mb: 6 }}>
           <Typography 
@@ -232,17 +271,129 @@ const StoryPage: React.FC = () => {
             💬 Chat Adventure
           </Button>
         </Box>
-      </Box>
+        </Box>
+      </MagicalGestureRecognizer>
       
-      {/* Old Tom Character */}
+      {/* AI-Integrated Old Tom Character */}
+      <AIIntegratedCharacter
+        characterId="old-tom"
+        position="center"
+        size="large"
+        interactive={true}
+        enableVoice={true}
+        enableEmotionalAI={true}
+        childAge={8}
+        onAIResponse={(response) => console.log('AI Response:', response)}
+        showControls={true}
+        autoInitialize={true}
+      />
+
+      {/* Traditional Old Tom Character */}
       <OldTomCharacter
         isVisible={true}
         animationType={oldTomAnimation}
         position="right"
-        size="large"
+        size="medium"
         isAnimating={isOldTomSpeaking}
         onAnimationComplete={() => setOldTomAnimation('idle')}
       />
+
+      {/* Ask Old Tom Interface */}
+      <AskOldTomInterface
+        onQuestionSubmit={(question) => {
+          console.log('Question for Old Tom:', question);
+          setOldTomAnimation('speaking');
+        }}
+        onChatOpen={() => setChatVisible(true)}
+        showSuggestions={true}
+        enableVoiceInput={true}
+      />
+
+      {/* Emotional Feedback System */}
+      <EmotionalFeedbackSystem
+        currentContent={{
+          type: 'exploration',
+          emotionalTone: 'calm',
+          intensityLevel: 2,
+          potentialTriggers: []
+        }}
+        onStateChange={setEmotionalState}
+        onComfortAction={(action) => {
+          console.log('Comfort action:', action);
+          if (action === 'support') {
+            setEmotionalState(prev => ({ ...prev, needsSupport: true }));
+          }
+        }}
+        showControls={true}
+      />
+
+      {/* Old Tom Comfort Character */}
+      <OldTomComfortCharacter
+        emotionalState={emotionalState}
+        onComfortProvided={() => {
+          setEmotionalState(prev => ({ 
+            ...prev, 
+            needsSupport: false,
+            comfort: Math.min(5, prev.comfort + 1)
+          }));
+        }}
+        visible={emotionalState.needsSupport}
+      />
+
+      {/* Educational Progress Tracker */}
+      <EducationalProgressTracker
+        learningObjectives={[
+          {
+            id: 'marine-biology-basics',
+            title: 'Marine Biology Fundamentals',
+            childFriendlyTitle: 'Ocean Friends',
+            description: 'Learn about sea creatures and their homes',
+            category: 'marine-biology',
+            difficulty: 'beginner',
+            progress: 75,
+            completed: false,
+            discovered: true,
+            mastery: 60
+          }
+        ]}
+        achievements={[
+          {
+            id: 'first-friend',
+            title: 'First Friend',
+            childFriendlyTitle: 'Old Tom\'s New Friend',
+            description: 'Made your first connection with Old Tom',
+            icon: '🐋',
+            rarity: 'common',
+            unlockedAt: new Date(),
+            category: 'friendship'
+          }
+        ]}
+        currentActivity={{
+          type: 'exploration',
+          emotionalTone: 'calm',
+          intensityLevel: 2,
+          potentialTriggers: []
+        }}
+        onObjectiveComplete={(id) => {
+          setShowCelebration({ type: 'learning', visible: true });
+          setTimeout(() => setShowCelebration(null), 4000);
+        }}
+        onAchievementUnlock={(id) => {
+          setShowCelebration({ type: 'achievement', visible: true });
+          setTimeout(() => setShowCelebration(null), 5000);
+        }}
+        showCelebration={true}
+      />
+
+      {/* Celebration Animations */}
+      {showCelebration && (
+        <CelebrationAnimations
+          type={showCelebration.type}
+          visible={showCelebration.visible}
+          onComplete={() => setShowCelebration(null)}
+          intensity="moderate"
+        />
+      )}
 
       {/* Old Tom Chat Interface */}
       <OldTomChat 
