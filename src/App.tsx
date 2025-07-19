@@ -2,15 +2,19 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Box, Typography, Container, Button, Fab } from '@mui/material';
-import ChatIcon from '@mui/icons-material/Chat';
+import { Box } from '@mui/material';
 
-// Import Old Tom's voice service and chat component
-import { ElevenLabsTTSService } from './services/elevenLabsTTS';
-import OldTomChat from './components/OldTomChat';
+// Import all main components
+import { UXOrchestrator } from './components/ux/UXOrchestrator';
+import { StudioGhibliAudioManager } from './components/audio/StudioGhibliAudioManager';
 import OceanParticles from './components/OceanParticles';
 import OldTomCharacter from './components/OldTomCharacter';
-import OrchestraManager from './components/OrchestraManager';
+import OldTomChat from './components/OldTomChat';
+import { AIIntegratedCharacter } from './components/ai/AIIntegratedCharacter';
+import { AskOldTomInterface } from './components/ai/AskOldTomInterface';
+import { NavigationContainer } from './components/ui/NavigationContainer';
+import { LoadingScreen } from './components/ui/LoadingScreen';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 // Create Studio Ghibli + Antique Marine theme
 const theme = createTheme({
@@ -68,255 +72,138 @@ const theme = createTheme({
   spacing: 8,
 });
 
-// Initialize Old Tom's voice service
-const oldTomVoice = new ElevenLabsTTSService();
-
-// Enhanced Marine-themed Home Page
-const HomePage: React.FC = () => {
-  const [isOldTomSpeaking, setIsOldTomSpeaking] = useState(false);
-  const [chatVisible, setChatVisible] = useState(false);
+// Main Story/Home Page
+const StoryPage: React.FC = () => {
   const [oldTomAnimation, setOldTomAnimation] = useState<'idle' | 'speaking' | 'greeting'>('idle');
-  const [currentMood, setCurrentMood] = useState<'peaceful' | 'mysterious' | 'adventurous' | 'nostalgic' | 'dramatic'>('peaceful');
-  const [, setUserInteracted] = useState(false);
-
-  const handleTalkToOldTom = async () => {
-    if (isOldTomSpeaking) return;
-    
-    setIsOldTomSpeaking(true);
-    setOldTomAnimation('greeting');
-    setCurrentMood('adventurous'); // Change mood when Old Tom speaks
-    
-    try {
-      await oldTomVoice.initialize();
-      
-      // After greeting animation, start speaking
-      setTimeout(() => {
-        setOldTomAnimation('speaking');
-      }, 1000);
-      
-      const greetingText = `Ahoy there, young navigator! I am Old Tom, the great orca of Eden Bay. 
-        For decades, my pod and I worked alongside the Davidson whalers in the ancient partnership 
-        known as the "Law of the Tongue." Would you like to hear tales of our adventures 
-        beneath the Southern Ocean waves?`;
-      
-      await oldTomVoice.streamTextToSpeech(greetingText, 'old-tom');
-    } catch (error) {
-      console.error('Error with Old Tom voice:', error);
-    }
-    
-    setIsOldTomSpeaking(false);
-    setOldTomAnimation('idle');
-    setCurrentMood('peaceful'); // Return to peaceful mood
-  };
-
-  const handleOpenChat = () => {
-    setChatVisible(true);
-  };
+  const [chatVisible, setChatVisible] = useState(false);
 
   return (
-    <>
-      {/* Google Fonts Import */}
-      <link 
-        href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" 
-        rel="stylesheet" 
-      />
+    <Box sx={{ position: 'relative', minHeight: '100vh' }}>
+      {/* 3D Ocean Environment */}
+      <OceanParticles intensity="high" />
       
-      <Box
-        onClick={() => setUserInteracted(true)}
-        sx={{
-          minHeight: '100vh',
-          background: 'linear-gradient(135deg, #0a1a2e 0%, #16537e 25%, #2E8B57 75%, #1a4d3a 100%)',
-          position: 'relative',
-          overflowX: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: `
-              radial-gradient(circle at 20% 80%, rgba(46, 139, 87, 0.3) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(212, 175, 55, 0.2) 0%, transparent 50%),
-              radial-gradient(circle at 40% 40%, rgba(15, 52, 96, 0.4) 0%, transparent 50%)
-            `,
-            animation: 'oceanWaves 8s ease-in-out infinite',
-          },
+      {/* AI-Integrated Old Tom Character */}
+      <AIIntegratedCharacter
+        characterId="old-tom"
+        position="center"
+        size="large"
+        animationType={oldTomAnimation}
+        onAnimationChange={setOldTomAnimation}
+        enableVoice={true}
+        enableGestures={true}
+        enableEmotionalIntelligence={true}
+      />
+
+      {/* Ask Old Tom Interface */}
+      <AskOldTomInterface
+        onQuestionSubmit={(question) => {
+          console.log('Question for Old Tom:', question);
+          setOldTomAnimation('speaking');
         }}
-      >
-        {/* Immersive Experience Container */}
-        <Container
-          maxWidth="lg"
-          sx={{
-            minHeight: '100vh',
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 2,
-          }}
-        >
-            {/* Main Title with Antique Marine Styling */}
-            <Typography 
-              variant="h1" 
-              component="h1" 
-              gutterBottom 
-              sx={{
-                background: 'linear-gradient(45deg, #F5F5DC 30%, #D4AF37 70%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                textTransform: 'uppercase',
-                marginBottom: 3,
-                position: 'relative',
-                '&::after': {
-                  content: '"⚓"',
-                  position: 'absolute',
-                  right: '-60px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  fontSize: '3rem',
-                  color: '#8B7355',
-                  animation: 'anchorSway 3s ease-in-out infinite',
-                }
-              }}
-            >
-              🐋 Old Tom
-            </Typography>
+        onChatOpen={() => setChatVisible(true)}
+        showSuggestions={true}
+        enableVoiceInput={true}
+      />
 
-            <Typography 
-              variant="h2" 
-              component="h2" 
-              gutterBottom 
-              sx={{ 
-                mb: 4,
-                fontStyle: 'italic',
-                position: 'relative',
-                '&::before, &::after': {
-                  content: '"⟶"',
-                  position: 'absolute',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#8B7355',
-                  fontSize: '1.5rem',
-                },
-                '&::before': { left: '-40px', transform: 'translateY(-50%) rotate(180deg)' },
-                '&::after': { right: '-40px' },
-              }}
-            >
-              The Living Legend of Eden Bay
-            </Typography>
+      {/* Old Tom Chat Interface */}
+      <OldTomChat 
+        open={chatVisible} 
+        onClose={() => setChatVisible(false)} 
+      />
+    </Box>
+  );
+};
 
+// Ocean Exploration Page
+const OceanPage: React.FC = () => {
+  return (
+    <Box sx={{ position: 'relative', minHeight: '100vh' }}>
+      <OceanParticles intensity="high" />
+      <OldTomCharacter
+        isVisible={true}
+        animationType="swimming"
+        position="center"
+        size="large"
+        isAnimating={true}
+      />
+    </Box>
+  );
+};
 
+// Chat/Conversation Page
+const ChatPage: React.FC = () => {
+  return (
+    <Box sx={{ position: 'relative', minHeight: '100vh' }}>
+      <OceanParticles intensity="medium" />
+      <OldTomChat open={true} onClose={() => {}} />
+    </Box>
+  );
+};
 
-            {/* Interactive Controls */}
-            <Box sx={{ 
-              mt: 4, 
-              display: 'flex', 
-              gap: 3, 
-              flexWrap: 'wrap', 
-              justifyContent: 'center',
-              zIndex: 10,
-            }}>
-              <Button
-                variant="contained"
-                size="large"
-                onClick={handleTalkToOldTom}
-                disabled={isOldTomSpeaking}
-                sx={{
-                  background: 'linear-gradient(45deg, #2E8B57 30%, #4CAF50 90%)',
-                  color: '#F5F5DC',
-                  fontFamily: '"Cinzel", serif',
-                  fontSize: '1.3rem',
-                  fontWeight: 600,
-                  padding: '18px 36px',
-                  borderRadius: 4,
-                  textTransform: 'none',
-                  boxShadow: '0 8px 32px rgba(46, 139, 87, 0.4)',
-                  border: '2px solid rgba(212, 175, 55, 0.5)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&:hover': {
-                    background: 'linear-gradient(45deg, #4CAF50 30%, #2E8B57 90%)',
-                    boxShadow: '0 12px 40px rgba(46, 139, 87, 0.5)',
-                    transform: 'translateY(-3px)',
-                  },
-                  '&:disabled': {
-                    background: 'linear-gradient(45deg, #555 30%, #777 90%)',
-                    opacity: 0.7,
-                  },
-                  '&::before': {
-                    content: isOldTomSpeaking ? '"🌊"' : '"🐋"',
-                    position: 'absolute',
-                    left: '18px',
-                    fontSize: '1.8rem',
-                    animation: isOldTomSpeaking ? 'speaking 1s infinite' : 'none',
-                  }
-                }}
-              >
-                {isOldTomSpeaking ? 'Old Tom is speaking...' : 'Meet Old Tom'}
-              </Button>
+const App: React.FC = () => {
+  const [loading, setLoading] = useState(true);
 
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={handleOpenChat}
-                sx={{
-                  color: '#D4AF37',
-                  borderColor: 'rgba(212, 175, 55, 0.7)',
-                  fontFamily: '"Cinzel", serif',
-                  fontSize: '1.3rem',
-                  fontWeight: 600,
-                  padding: '18px 36px',
-                  borderRadius: 4,
-                  textTransform: 'none',
-                  borderWidth: 2,
-                  '&:hover': {
-                    borderColor: '#D4AF37',
-                    background: 'rgba(212, 175, 55, 0.15)',
-                    transform: 'translateY(-3px)',
-                    boxShadow: '0 8px 24px rgba(212, 175, 55, 0.3)',
-                  }
-                }}
-                startIcon={<ChatIcon />}
-              >
-                Chat Adventure
-              </Button>
-            </Box>
-        </Container>
+  // User profile for UX orchestration
+  const userProfile = {
+    name: "Young Explorer",
+    age: 8,
+    accessibilityNeeds: [],
+    learningPreferences: ["visual", "interactive", "storytelling"]
+  };
 
-        {/* Floating Chat Button */}
-        <Fab
-          color="primary"
-          aria-label="chat"
-          onClick={handleOpenChat}
-          sx={{
-            position: 'fixed',
-            bottom: 32,
-            right: 32,
-            background: 'linear-gradient(45deg, #2E8B57 30%, #4CAF50 90%)',
-            '&:hover': {
-              background: 'linear-gradient(45deg, #4CAF50 30%, #2E8B57 90%)',
-            },
-            boxShadow: '0 8px 32px rgba(46, 139, 87, 0.3)',
-            zIndex: 1000,
-          }}
-        >
-          <ChatIcon />
-        </Fab>
+  // Current progress tracking
+  const currentProgress = {
+    totalSteps: 10,
+    completedSteps: 3,
+    currentChapter: "Meeting Old Tom"
+  };
 
-        {/* Old Tom Character Animation */}
-        <OldTomCharacter
-          isVisible={true}
-          animationType={oldTomAnimation}
-          position="right"
-          size="large"
-          isAnimating={isOldTomSpeaking}
+  React.useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <ErrorBoundary>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        
+        {/* Google Fonts Import */}
+        <link 
+          href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" 
+          rel="stylesheet" 
         />
 
-        {/* CSS Animations */}
-        <style jsx>{`
+        <Router>
+          <UXOrchestrator
+            userProfile={userProfile}
+            currentProgress={currentProgress}
+          >
+            <NavigationContainer>
+              <Routes>
+                <Route path="/" element={<StoryPage />} />
+                <Route path="/story" element={<StoryPage />} />
+                <Route path="/ocean" element={<OceanPage />} />
+                <Route path="/chat" element={<ChatPage />} />
+              </Routes>
+            </NavigationContainer>
+          </UXOrchestrator>
+        </Router>
+
+        {/* Studio Ghibli Audio Manager */}
+        <StudioGhibliAudioManager
+          currentScene="ocean-home"
+          emotionalTone="peaceful"
+          enableDynamicMixing={true}
+          enableSpatialAudio={true}
+        />
+
+        {/* Global CSS Animations */}
+        <style jsx global>{`
           @keyframes oceanWaves {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
             33% { transform: translateY(-10px) rotate(1deg); }
@@ -332,35 +219,15 @@ const HomePage: React.FC = () => {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.2); }
           }
+
+          @keyframes magical-sparkle {
+            0% { opacity: 0; transform: scale(0) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1) rotate(180deg); }
+            100% { opacity: 0; transform: scale(0) rotate(360deg); }
+          }
         `}</style>
-      </Box>
-
-      {/* Old Tom Chat Interface */}
-      <OldTomChat open={chatVisible} onClose={() => setChatVisible(false)} />
-
-      {/* Orchestra Manager */}
-      <OrchestraManager
-        currentMood={currentMood}
-        isPlaying={true}
-        volume={0.3}
-        onMoodChange={(mood) => setCurrentMood(mood as any)}
-      />
-    </>
-  );
-};
-
-const App: React.FC = () => {
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      {/* 3D Ocean Particles Background */}
-      <OceanParticles intensity="high" />
-      <Router>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-        </Routes>
-      </Router>
-    </ThemeProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 
