@@ -144,19 +144,19 @@ const HomePage: React.FC = () => {
           },
         }}
       >
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-          <Box
-            sx={{
-              minHeight: '100vh',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              textAlign: 'center',
-              padding: 4,
-              paddingTop: 8,
-            }}
-          >
+        {/* Immersive Experience Container */}
+        <Container
+          maxWidth="lg"
+          sx={{
+            minHeight: '100vh',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 2,
+          }}
+        >
             {/* Main Title with Antique Marine Styling */}
             <Typography 
               variant="h1" 
@@ -208,96 +208,16 @@ const HomePage: React.FC = () => {
               The Living Legend of Eden Bay
             </Typography>
 
-            <Typography 
-              variant="body1" 
-              sx={{ 
-                maxWidth: '900px', 
-                mb: 6,
-                background: 'rgba(15, 52, 96, 0.3)',
-                padding: 3,
-                borderRadius: 2,
-                border: '2px solid rgba(212, 175, 55, 0.3)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-                position: 'relative',
-                '&::before': {
-                  content: '"⛵"',
-                  position: 'absolute',
-                  top: '-15px',
-                  left: '20px',
-                  fontSize: '2rem',
-                  background: 'rgba(15, 52, 96, 0.8)',
-                  padding: '5px 10px',
-                  borderRadius: '50%',
-                }
-              }}
-            >
-              In the waters off Eden, Australia, a legendary partnership was forged between man and whale. 
-              Old Tom, the great orca, led his pod in the ancient "Law of the Tongue" — guiding whalers 
-              to their quarry in exchange for the choicest portions. This is his story, brought to life 
-              through the magic of Studio Ghibli artistry and modern AI storytelling.
-            </Typography>
 
-            {/* Feature Grid with Maritime Styling */}
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-              gap: 3,
-              width: '100%',
-              maxWidth: '800px',
-            }}>
-              {[
-                { icon: '🎭', title: 'Converse with Old Tom', desc: 'AI-powered conversations with the legendary orca' },
-                { icon: '🌊', title: 'Living Ocean World', desc: 'Interactive marine environment with realistic physics' },
-                { icon: '🎨', title: 'Ghibli Artistry', desc: 'Hand-crafted animations in Studio Ghibli style' },
-                { icon: '📜', title: 'Historical Chronicles', desc: 'Educational content about the true Davidson partnership' }
-              ].map((feature, index) => (
-                <Box
-                  key={index}
-                  sx={{
-                    background: 'linear-gradient(135deg, rgba(46, 139, 87, 0.2) 0%, rgba(15, 52, 96, 0.3) 100%)',
-                    border: '1px solid rgba(212, 175, 55, 0.4)',
-                    borderRadius: 3,
-                    padding: 3,
-                    textAlign: 'center',
-                    position: 'relative',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: '0 12px 40px rgba(212, 175, 55, 0.2)',
-                      borderColor: 'rgba(212, 175, 55, 0.6)',
-                    }
-                  }}
-                >
-                  <Typography variant="h3" sx={{ fontSize: '3rem', mb: 1 }}>
-                    {feature.icon}
-                  </Typography>
-                  <Typography variant="h6" sx={{ 
-                    fontFamily: '"Cinzel", serif',
-                    color: '#D4AF37',
-                    mb: 1,
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                  }}>
-                    {feature.title}
-                  </Typography>
-                  <Typography variant="body2" sx={{ 
-                    fontFamily: '"Crimson Text", serif',
-                    fontSize: '0.95rem',
-                    opacity: 0.9,
-                  }}>
-                    {feature.desc}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
 
-            {/* Talk to Old Tom Button */}
+            {/* Interactive Controls */}
             <Box sx={{ 
-              mt: 6, 
+              mt: 4, 
               display: 'flex', 
               gap: 3, 
               flexWrap: 'wrap', 
-              justifyContent: 'center'
+              justifyContent: 'center',
+              zIndex: 10,
             }}>
               <Button
                 variant="contained"
@@ -308,19 +228,19 @@ const HomePage: React.FC = () => {
                   background: 'linear-gradient(45deg, #2E8B57 30%, #4CAF50 90%)',
                   color: '#F5F5DC',
                   fontFamily: '"Cinzel", serif',
-                  fontSize: '1.2rem',
+                  fontSize: '1.3rem',
                   fontWeight: 600,
-                  padding: '16px 32px',
+                  padding: '18px 36px',
                   borderRadius: 4,
                   textTransform: 'none',
-                  boxShadow: '0 8px 32px rgba(46, 139, 87, 0.3)',
-                  border: '2px solid rgba(212, 175, 55, 0.4)',
+                  boxShadow: '0 8px 32px rgba(46, 139, 87, 0.4)',
+                  border: '2px solid rgba(212, 175, 55, 0.5)',
                   position: 'relative',
                   overflow: 'hidden',
                   '&:hover': {
                     background: 'linear-gradient(45deg, #4CAF50 30%, #2E8B57 90%)',
-                    boxShadow: '0 12px 40px rgba(46, 139, 87, 0.4)',
-                    transform: 'translateY(-2px)',
+                    boxShadow: '0 12px 40px rgba(46, 139, 87, 0.5)',
+                    transform: 'translateY(-3px)',
                   },
                   '&:disabled': {
                     background: 'linear-gradient(45deg, #555 30%, #777 90%)',
@@ -329,13 +249,13 @@ const HomePage: React.FC = () => {
                   '&::before': {
                     content: isOldTomSpeaking ? '"🌊"' : '"🐋"',
                     position: 'absolute',
-                    left: '16px',
-                    fontSize: '1.5rem',
+                    left: '18px',
+                    fontSize: '1.8rem',
                     animation: isOldTomSpeaking ? 'speaking 1s infinite' : 'none',
                   }
                 }}
               >
-                {isOldTomSpeaking ? 'Old Tom is speaking...' : 'Talk to Old Tom'}
+                {isOldTomSpeaking ? 'Old Tom is speaking...' : 'Meet Old Tom'}
               </Button>
 
               <Button
@@ -344,26 +264,26 @@ const HomePage: React.FC = () => {
                 onClick={handleOpenChat}
                 sx={{
                   color: '#D4AF37',
-                  borderColor: 'rgba(212, 175, 55, 0.6)',
+                  borderColor: 'rgba(212, 175, 55, 0.7)',
                   fontFamily: '"Cinzel", serif',
-                  fontSize: '1.2rem',
+                  fontSize: '1.3rem',
                   fontWeight: 600,
-                  padding: '16px 32px',
+                  padding: '18px 36px',
                   borderRadius: 4,
                   textTransform: 'none',
                   borderWidth: 2,
                   '&:hover': {
                     borderColor: '#D4AF37',
-                    background: 'rgba(212, 175, 55, 0.1)',
-                    transform: 'translateY(-2px)',
+                    background: 'rgba(212, 175, 55, 0.15)',
+                    transform: 'translateY(-3px)',
+                    boxShadow: '0 8px 24px rgba(212, 175, 55, 0.3)',
                   }
                 }}
                 startIcon={<ChatIcon />}
               >
-                Chat with Old Tom
+                Chat Adventure
               </Button>
             </Box>
-          </Box>
         </Container>
 
         {/* Floating Chat Button */}

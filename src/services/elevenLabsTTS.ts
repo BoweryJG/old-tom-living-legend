@@ -6,10 +6,10 @@ import { EventEmitter } from 'events';
 let agentConfigs: any = {
   'old-tom': {
     voiceConfig: {
-      voiceId: '21m00Tcm4TlvDq8ikWAM', // Default ElevenLabs voice ID
-      stability: 0.8,
-      similarityBoost: 0.7,
-      style: 0.3,
+      voiceId: '21m00Tcm4TlvDq8ikWAM', // Rachel voice - warm and clear
+      stability: 0.5,
+      similarityBoost: 0.9,
+      style: 0.2,
       speakerBoost: true
     }
   }
