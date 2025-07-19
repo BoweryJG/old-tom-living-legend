@@ -5,14 +5,9 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { Box } from '@mui/material';
 
 // Import existing components
-import UXOrchestrator from './components/ux/UXOrchestrator';
-import StudioGhibliAudioManager from './components/audio/StudioGhibliAudioManager';
 import OceanParticles from './components/OceanParticles';
 import OldTomCharacter from './components/OldTomCharacter';
 import OldTomChat from './components/OldTomChat';
-import AIIntegratedCharacter from './components/ai/AIIntegratedCharacter';
-import AskOldTomInterface from './components/ai/AskOldTomInterface';
-import NavigationContainer from './components/ui/NavigationContainer';
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
@@ -129,21 +124,6 @@ const ChatPage: React.FC = () => {
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
-
-  // User profile for UX orchestration
-  const userProfile = {
-    name: "Young Explorer",
-    age: 8,
-    accessibilityNeeds: [],
-    learningPreferences: ["visual", "interactive", "storytelling"]
-  };
-
-  // Current progress tracking
-  const currentProgress = {
-    totalSteps: 10,
-    completedSteps: 3,
-    currentChapter: "Meeting Old Tom"
-  };
 
   React.useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 2000);
