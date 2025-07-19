@@ -77,6 +77,7 @@ const HomePage: React.FC = () => {
   const [chatVisible, setChatVisible] = useState(false);
   const [oldTomAnimation, setOldTomAnimation] = useState<'idle' | 'speaking' | 'greeting'>('idle');
   const [currentMood, setCurrentMood] = useState<'peaceful' | 'mysterious' | 'adventurous' | 'nostalgic' | 'dramatic'>('peaceful');
+  const [, setUserInteracted] = useState(false);
 
   const handleTalkToOldTom = async () => {
     if (isOldTomSpeaking) return;
@@ -121,6 +122,7 @@ const HomePage: React.FC = () => {
       />
       
       <Box
+        onClick={() => setUserInteracted(true)}
         sx={{
           minHeight: '100vh',
           background: 'linear-gradient(135deg, #0a1a2e 0%, #16537e 25%, #2E8B57 75%, #1a4d3a 100%)',

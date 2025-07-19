@@ -33,6 +33,7 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
 }) => {
   const [masterVolume, setMasterVolume] = useState(volume);
   const [isMusicPlaying, setIsMusicPlaying] = useState(isPlaying);
+  const [userHasInteracted, setUserHasInteracted] = useState(false);
   // const [currentTrack] = useState<AudioTrack | null>(null); // Unused for now
   const [isControlsVisible, setIsControlsVisible] = useState(false);
   const [audioLayers, setAudioLayers] = useState<Map<string, HTMLAudioElement>>(new Map());
@@ -206,7 +207,7 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
           
           // Start/stop tracks based on mood
           if (track.mood === currentMood || track.mood === 'peaceful') {
-            if (isMusicPlaying && audio.paused) {
+            if (isMusicPlaying && audio.paused && userHasInteracted) {
               audio.play().catch(console.error);
             }
           } else {
@@ -226,7 +227,7 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
     if (audioLayers.size > 0) {
       updateLayerVolumes();
     }
-  }, [currentMood, masterVolume, isMusicPlaying, audioLayers, orchestralLayers]);
+  }, [currentMood, masterVolume, isMusicPlaying, audioLayers, orchestralLayers, userHasInteracted]);
 
   const handleVolumeChange = (_: Event, newValue: number | number[]) => {
     const volume = Array.isArray(newValue) ? newValue[0] : newValue;
@@ -240,6 +241,7 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
       if (isMusicPlaying) {
         audio.pause();
       } else {
+        setUserHasInteracted(true);
         audio.play().catch(console.error);
       }
     });
