@@ -101,41 +101,78 @@ const oldTomVoice = new ElevenLabsTTSService();
 
 // Main Story/Home Page
 const StoryPage: React.FC = () => {
-  const [oldTomAnimation, setOldTomAnimation] = useState<'idle' | 'speaking' | 'greeting'>('idle');
+  const [oldTomAnimation, setOldTomAnimation] = useState<'idle' | 'speaking' | 'greeting'>('greeting');
   const [chatVisible, setChatVisible] = useState(false);
-  const [isOldTomSpeaking, setIsOldTomSpeaking] = useState(false);
-  const [currentMood, setCurrentMood] = useState<'peaceful' | 'mysterious' | 'adventurous' | 'nostalgic' | 'dramatic'>('peaceful');
-  const [showCelebration, setShowCelebration] = useState<{ type: 'achievement' | 'learning' | 'discovery' | 'mastery' | 'friendship'; visible: boolean } | null>(null);
+  const [isOldTomSpeaking, setIsOldTomSpeaking] = useState(true);
+  const [currentMood, setCurrentMood] = useState<'peaceful' | 'mysterious' | 'adventurous' | 'nostalgic' | 'dramatic'>('adventurous');
+  const [showCelebration, setShowCelebration] = useState<{ type: 'achievement' | 'learning' | 'discovery' | 'mastery' | 'friendship'; visible: boolean } | null>({ type: 'discovery', visible: true });
   const [emotionalState, setEmotionalState] = useState({
     comfort: 5,
-    engagement: 4,
-    confidence: 4,
+    engagement: 5,
+    confidence: 5,
     needsSupport: false,
     preferredPace: 'normal' as 'slow' | 'normal' | 'fast',
   });
-  const [, setUserInteracted] = useState(false);
+  const [, setUserInteracted] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Your beautiful Studio Ghibli images
+  const studioGhibliImages = [
+    '/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp',
+    '/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp',
+    '/2025-07-19_FLUX_1-schnell-infer_Image_21ea0.webp',
+    '/2025-07-19_FLUX_1-schnell-infer_Image_278de.webp',
+    '/2025-07-19_FLUX_1-schnell-infer_Image_b48b2.webp',
+    '/2025-07-19_FLUX_1-schnell-infer_Image_d2891.webp'
+  ];
+
+  // Auto-cycle through your beautiful images
+  React.useEffect(() => {
+    const imageInterval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % studioGhibliImages.length);
+    }, 4000); // Change image every 4 seconds
+    return () => clearInterval(imageInterval);
+  }, [studioGhibliImages.length]);
+
+  // Auto-start Old Tom talking immediately
+  React.useEffect(() => {
+    const startTalking = async () => {
+      try {
+        await oldTomVoice.initialize();
+        
+        const greetingText = `Ahoy there, young navigator! I am Old Tom, the great orca of Eden Bay. 
+          Welcome to my magical ocean realm! Look around at these beautiful waters - each wave tells a story, 
+          each current holds an adventure. For decades, my pod and I worked alongside the Davidson whalers 
+          in the ancient partnership known as the "Law of the Tongue." 
+          
+          The ocean is alive with wonder! Click anywhere to dive deeper into our world, 
+          or simply watch as the magic unfolds before your eyes...`;
+        
+        await oldTomVoice.streamTextToSpeech(greetingText, 'old-tom');
+      } catch (error) {
+        console.error('Error with Old Tom voice:', error);
+      }
+    };
+    
+    // Start immediately when page loads
+    setTimeout(startTalking, 1000);
+  }, []);
 
   const handleTalkToOldTom = async () => {
     if (isOldTomSpeaking) return;
     
     setIsOldTomSpeaking(true);
-    setOldTomAnimation('greeting');
+    setOldTomAnimation('speaking');
     setCurrentMood('adventurous');
     setUserInteracted(true);
     
     try {
-      await oldTomVoice.initialize();
+      const adventureText = `Magnificent! You've awakened the spirit of adventure! 
+        Let me show you the depths of our ocean realm. Each of these scenes holds secrets - 
+        shipwrecks of old, pods of whales singing ancient songs, coral gardens that glow 
+        in the moonlight. Which part of our world calls to your heart?`;
       
-      setTimeout(() => {
-        setOldTomAnimation('speaking');
-      }, 1000);
-      
-      const greetingText = `Ahoy there, young navigator! I am Old Tom, the great orca of Eden Bay. 
-        For decades, my pod and I worked alongside the Davidson whalers in the ancient partnership 
-        known as the "Law of the Tongue." Would you like to hear tales of our adventures 
-        beneath the Southern Ocean waves?`;
-      
-      await oldTomVoice.streamTextToSpeech(greetingText, 'old-tom');
+      await oldTomVoice.streamTextToSpeech(adventureText, 'old-tom');
     } catch (error) {
       console.error('Error with Old Tom voice:', error);
     }
@@ -158,7 +195,7 @@ const StoryPage: React.FC = () => {
       sx={{ 
         position: 'relative', 
         minHeight: '100vh',
-        background: `linear-gradient(135deg, rgba(10,26,46,0.8) 0%, rgba(22,83,126,0.8) 25%, rgba(46,139,87,0.8) 75%, rgba(26,77,58,0.8) 100%), url('/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp')`,
+        background: `linear-gradient(135deg, rgba(10,26,46,0.3) 0%, rgba(22,83,126,0.3) 25%, rgba(46,139,87,0.3) 75%, rgba(26,77,58,0.3) 100%), url('${studioGhibliImages[currentImageIndex]}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
@@ -314,14 +351,14 @@ const StoryPage: React.FC = () => {
         autoInitialize={true}
       />
 
-      {/* Traditional Old Tom Character */}
+      {/* Traditional Old Tom Character - ALWAYS VISIBLE AND ANIMATED */}
       <OldTomCharacter
         isVisible={true}
         animationType={oldTomAnimation}
-        position="right"
-        size="medium"
-        isAnimating={isOldTomSpeaking}
-        onAnimationComplete={() => setOldTomAnimation('idle')}
+        position="center"
+        size="large"
+        isAnimating={true}
+        onAnimationComplete={() => setOldTomAnimation('speaking')}
       />
 
       {/* Ask Old Tom Interface */}
