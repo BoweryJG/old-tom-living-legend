@@ -4,15 +4,15 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box } from '@mui/material';
 
-// Import all main components
-import { UXOrchestrator } from './components/ux/UXOrchestrator';
-import { StudioGhibliAudioManager } from './components/audio/StudioGhibliAudioManager';
+// Import existing components
+import UXOrchestrator from './components/ux/UXOrchestrator';
+import StudioGhibliAudioManager from './components/audio/StudioGhibliAudioManager';
 import OceanParticles from './components/OceanParticles';
 import OldTomCharacter from './components/OldTomCharacter';
 import OldTomChat from './components/OldTomChat';
-import { AIIntegratedCharacter } from './components/ai/AIIntegratedCharacter';
-import { AskOldTomInterface } from './components/ai/AskOldTomInterface';
-import { NavigationContainer } from './components/ui/NavigationContainer';
+import AIIntegratedCharacter from './components/ai/AIIntegratedCharacter';
+import AskOldTomInterface from './components/ai/AskOldTomInterface';
+import NavigationContainer from './components/ui/NavigationContainer';
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
@@ -82,27 +82,14 @@ const StoryPage: React.FC = () => {
       {/* 3D Ocean Environment */}
       <OceanParticles intensity="high" />
       
-      {/* AI-Integrated Old Tom Character */}
-      <AIIntegratedCharacter
-        characterId="old-tom"
+      {/* Old Tom Character */}
+      <OldTomCharacter
+        isVisible={true}
+        animationType={oldTomAnimation}
         position="center"
         size="large"
-        animationType={oldTomAnimation}
-        onAnimationChange={setOldTomAnimation}
-        enableVoice={true}
-        enableGestures={true}
-        enableEmotionalIntelligence={true}
-      />
-
-      {/* Ask Old Tom Interface */}
-      <AskOldTomInterface
-        onQuestionSubmit={(question) => {
-          console.log('Question for Old Tom:', question);
-          setOldTomAnimation('speaking');
-        }}
-        onChatOpen={() => setChatVisible(true)}
-        showSuggestions={true}
-        enableVoiceInput={true}
+        isAnimating={true}
+        onAnimationComplete={() => setOldTomAnimation('idle')}
       />
 
       {/* Old Tom Chat Interface */}
@@ -179,28 +166,13 @@ const App: React.FC = () => {
         />
 
         <Router>
-          <UXOrchestrator
-            userProfile={userProfile}
-            currentProgress={currentProgress}
-          >
-            <NavigationContainer>
-              <Routes>
-                <Route path="/" element={<StoryPage />} />
-                <Route path="/story" element={<StoryPage />} />
-                <Route path="/ocean" element={<OceanPage />} />
-                <Route path="/chat" element={<ChatPage />} />
-              </Routes>
-            </NavigationContainer>
-          </UXOrchestrator>
+          <Routes>
+            <Route path="/" element={<StoryPage />} />
+            <Route path="/story" element={<StoryPage />} />
+            <Route path="/ocean" element={<OceanPage />} />
+            <Route path="/chat" element={<ChatPage />} />
+          </Routes>
         </Router>
-
-        {/* Studio Ghibli Audio Manager */}
-        <StudioGhibliAudioManager
-          currentScene="ocean-home"
-          emotionalTone="peaceful"
-          enableDynamicMixing={true}
-          enableSpatialAudio={true}
-        />
 
         {/* Global CSS Animations */}
         <style jsx global>{`

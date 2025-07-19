@@ -60,6 +60,13 @@ module.exports = override(
   // Custom webpack config for performance optimization
   (config) => {
     // Enable code splitting for animations and 3D libraries
+    if (!config.optimization.splitChunks) {
+      config.optimization.splitChunks = {};
+    }
+    if (!config.optimization.splitChunks.cacheGroups) {
+      config.optimization.splitChunks.cacheGroups = {};
+    }
+    
     config.optimization.splitChunks = {
       ...config.optimization.splitChunks,
       cacheGroups: {
