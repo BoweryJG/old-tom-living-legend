@@ -207,7 +207,7 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
           
           // Start/stop tracks based on mood
           if (track.mood === currentMood || track.mood === 'peaceful') {
-            if (isMusicPlaying && audio.paused && userHasInteracted) {
+            if (isMusicPlaying && audio.paused && userHasInteracted && audio.readyState >= 2) {
               audio.play().catch(console.error);
             }
           } else {
@@ -239,10 +239,14 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
     
     audioLayers.forEach(audio => {
       if (isMusicPlaying) {
-        audio.pause();
+        if (!audio.paused) {
+          audio.pause();
+        }
       } else {
         setUserHasInteracted(true);
-        audio.play().catch(console.error);
+        if (audio.paused && audio.readyState >= 2) {
+          audio.play().catch(console.error);
+        }
       }
     });
   };
