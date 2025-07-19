@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Box, Typography, Container } from '@mui/material';
+import { Box, Typography, Container, Button, Fab } from '@mui/material';
+import ChatIcon from '@mui/icons-material/Chat';
+
+// Import Old Tom's voice service and chat component
+import { ElevenLabsTTSService } from './services/elevenLabsTTS';
+import OldTomChat from './components/OldTomChat';
+import OceanParticles from './components/OceanParticles';
+import OldTomCharacter from './components/OldTomCharacter';
+import OrchestraManager from './components/OrchestraManager';
 
 // Create Studio Ghibli + Antique Marine theme
 const theme = createTheme({
@@ -60,8 +68,50 @@ const theme = createTheme({
   spacing: 8,
 });
 
+// Initialize Old Tom's voice service
+const oldTomVoice = new ElevenLabsTTSService();
+
 // Enhanced Marine-themed Home Page
 const HomePage: React.FC = () => {
+  const [isOldTomSpeaking, setIsOldTomSpeaking] = useState(false);
+  const [chatVisible, setChatVisible] = useState(false);
+  const [oldTomAnimation, setOldTomAnimation] = useState<'idle' | 'speaking' | 'greeting'>('idle');
+  const [currentMood, setCurrentMood] = useState<'peaceful' | 'mysterious' | 'adventurous' | 'nostalgic' | 'dramatic'>('peaceful');
+
+  const handleTalkToOldTom = async () => {
+    if (isOldTomSpeaking) return;
+    
+    setIsOldTomSpeaking(true);
+    setOldTomAnimation('greeting');
+    setCurrentMood('adventurous'); // Change mood when Old Tom speaks
+    
+    try {
+      await oldTomVoice.initialize();
+      
+      // After greeting animation, start speaking
+      setTimeout(() => {
+        setOldTomAnimation('speaking');
+      }, 1000);
+      
+      const greetingText = `Ahoy there, young navigator! I am Old Tom, the great orca of Eden Bay. 
+        For decades, my pod and I worked alongside the Davidson whalers in the ancient partnership 
+        known as the "Law of the Tongue." Would you like to hear tales of our adventures 
+        beneath the Southern Ocean waves?`;
+      
+      await oldTomVoice.streamTextToSpeech(greetingText, 'old-tom');
+    } catch (error) {
+      console.error('Error with Old Tom voice:', error);
+    }
+    
+    setIsOldTomSpeaking(false);
+    setOldTomAnimation('idle');
+    setCurrentMood('peaceful'); // Return to peaceful mood
+  };
+
+  const handleOpenChat = () => {
+    setChatVisible(true);
+  };
+
   return (
     <>
       {/* Google Fonts Import */}
@@ -237,8 +287,104 @@ const HomePage: React.FC = () => {
                 </Box>
               ))}
             </Box>
+
+            {/* Talk to Old Tom Button */}
+            <Box sx={{ mt: 6, display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={handleTalkToOldTom}
+                disabled={isOldTomSpeaking}
+                sx={{
+                  background: 'linear-gradient(45deg, #2E8B57 30%, #4CAF50 90%)',
+                  color: '#F5F5DC',
+                  fontFamily: '"Cinzel", serif',
+                  fontSize: '1.2rem',
+                  fontWeight: 600,
+                  padding: '16px 32px',
+                  borderRadius: 4,
+                  textTransform: 'none',
+                  boxShadow: '0 8px 32px rgba(46, 139, 87, 0.3)',
+                  border: '2px solid rgba(212, 175, 55, 0.4)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #4CAF50 30%, #2E8B57 90%)',
+                    boxShadow: '0 12px 40px rgba(46, 139, 87, 0.4)',
+                    transform: 'translateY(-2px)',
+                  },
+                  '&:disabled': {
+                    background: 'linear-gradient(45deg, #555 30%, #777 90%)',
+                    opacity: 0.7,
+                  },
+                  '&::before': {
+                    content: isOldTomSpeaking ? '"🌊"' : '"🐋"',
+                    position: 'absolute',
+                    left: '16px',
+                    fontSize: '1.5rem',
+                    animation: isOldTomSpeaking ? 'speaking 1s infinite' : 'none',
+                  }
+                }}
+              >
+                {isOldTomSpeaking ? 'Old Tom is speaking...' : 'Talk to Old Tom'}
+              </Button>
+
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={handleOpenChat}
+                sx={{
+                  color: '#D4AF37',
+                  borderColor: 'rgba(212, 175, 55, 0.6)',
+                  fontFamily: '"Cinzel", serif',
+                  fontSize: '1.2rem',
+                  fontWeight: 600,
+                  padding: '16px 32px',
+                  borderRadius: 4,
+                  textTransform: 'none',
+                  borderWidth: 2,
+                  '&:hover': {
+                    borderColor: '#D4AF37',
+                    background: 'rgba(212, 175, 55, 0.1)',
+                    transform: 'translateY(-2px)',
+                  }
+                }}
+                startIcon={<ChatIcon />}
+              >
+                Chat with Old Tom
+              </Button>
+            </Box>
           </Box>
         </Container>
+
+        {/* Floating Chat Button */}
+        <Fab
+          color="primary"
+          aria-label="chat"
+          onClick={handleOpenChat}
+          sx={{
+            position: 'fixed',
+            bottom: 32,
+            right: 32,
+            background: 'linear-gradient(45deg, #2E8B57 30%, #4CAF50 90%)',
+            '&:hover': {
+              background: 'linear-gradient(45deg, #4CAF50 30%, #2E8B57 90%)',
+            },
+            boxShadow: '0 8px 32px rgba(46, 139, 87, 0.3)',
+            zIndex: 1000,
+          }}
+        >
+          <ChatIcon />
+        </Fab>
+
+        {/* Old Tom Character Animation */}
+        <OldTomCharacter
+          isVisible={true}
+          animationType={oldTomAnimation}
+          position="right"
+          size="large"
+          isAnimating={isOldTomSpeaking}
+        />
 
         {/* CSS Animations */}
         <style jsx>{`
@@ -252,8 +398,24 @@ const HomePage: React.FC = () => {
             0%, 100% { transform: translateY(-50%) rotate(-5deg); }
             50% { transform: translateY(-60%) rotate(5deg); }
           }
+
+          @keyframes speaking {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+          }
         `}</style>
       </Box>
+
+      {/* Old Tom Chat Interface */}
+      <OldTomChat open={chatVisible} onClose={() => setChatVisible(false)} />
+
+      {/* Orchestra Manager */}
+      <OrchestraManager
+        currentMood={currentMood}
+        isPlaying={true}
+        volume={0.3}
+        onMoodChange={(mood) => setCurrentMood(mood as any)}
+      />
     </>
   );
 };
@@ -262,6 +424,8 @@ const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      {/* 3D Ocean Particles Background */}
+      <OceanParticles intensity="high" />
       <Router>
         <Routes>
           <Route path="/" element={<HomePage />} />
