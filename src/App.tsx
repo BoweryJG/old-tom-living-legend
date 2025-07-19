@@ -21,6 +21,7 @@ import { ChildFriendlyNavigation } from './components/navigation/ChildFriendlyNa
 import { StoryBreadcrumbs } from './components/navigation/StoryBreadcrumbs';
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { AccessibilityProvider } from './components/accessibility/AccessibilityProvider';
 import { ElevenLabsTTSService } from './services/elevenLabsTTS';
 
 // Create Studio Ghibli + Antique Marine theme
@@ -450,13 +451,18 @@ const App: React.FC = () => {
   }, []);
 
   if (loading) {
-    return <LoadingScreen />;
+    return (
+      <AccessibilityProvider>
+        <LoadingScreen />
+      </AccessibilityProvider>
+    );
   }
 
   return (
     <ErrorBoundary>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+      <AccessibilityProvider>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
         
         {/* Google Fonts Import */}
         <link 
@@ -497,7 +503,8 @@ const App: React.FC = () => {
             100% { opacity: 0; transform: scale(0) rotate(360deg); }
           }
         `}</style>
-      </ThemeProvider>
+        </ThemeProvider>
+      </AccessibilityProvider>
     </ErrorBoundary>
   );
 };
