@@ -127,7 +127,7 @@ const HomePage: React.FC = () => {
           minHeight: '100vh',
           background: 'linear-gradient(135deg, #0a1a2e 0%, #16537e 25%, #2E8B57 75%, #1a4d3a 100%)',
           position: 'relative',
-          overflow: 'hidden',
+          overflowX: 'hidden',
           '&::before': {
             content: '""',
             position: 'absolute',

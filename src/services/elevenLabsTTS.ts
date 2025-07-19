@@ -5,12 +5,13 @@ import { EventEmitter } from 'events';
 // Global agentConfigs fallback
 let agentConfigs: any = {
   'old-tom': {
-    voiceId: '21m00Tcm4TlvDq8ikWAM', // Default ElevenLabs voice ID
-    model: 'eleven_multilingual_v2',
-    stability: 0.8,
-    similarityBoost: 0.7,
-    style: 0.3,
-    useSpeakerBoost: true
+    voiceConfig: {
+      voiceId: '21m00Tcm4TlvDq8ikWAM', // Default ElevenLabs voice ID
+      stability: 0.8,
+      similarityBoost: 0.7,
+      style: 0.3,
+      speakerBoost: true
+    }
   }
 };
 
