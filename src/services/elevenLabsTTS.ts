@@ -122,7 +122,7 @@ export class ElevenLabsTTSService extends EventEmitter {
   }
 
   /**
-   * Stream text-to-speech with WebSocket for real-time voice generation
+   * Stream text-to-speech with simple REST API fallback
    */
   async streamTextToSpeech(text: string, agentId: string): Promise<void> {
     const voiceConfig = this.getAgentVoiceConfig(agentId);
@@ -130,7 +130,46 @@ export class ElevenLabsTTSService extends EventEmitter {
       throw new Error(`No voice configuration found for agent: ${agentId}`);
     }
 
-    return this.streamWithVoice(text, voiceConfig);
+    // Simple REST API fallback for now
+    try {
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceConfig.voiceId}`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': this.config.apiKey
+        },
+        body: JSON.stringify({
+          text: text,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: voiceConfig.voiceSettings
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`ElevenLabs API error: ${response.status}`);
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      audio.oncanplaythrough = () => {
+        audio.play().catch(console.error);
+      };
+      
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        this.emit('stream-ended');
+      };
+
+      this.emit('stream-started');
+      
+    } catch (error) {
+      console.error('ElevenLabs TTS Error:', error);
+      this.emit('error', { type: 'tts', error });
+      throw error;
+    }
   }
 
   /**

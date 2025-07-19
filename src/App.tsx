@@ -151,9 +151,10 @@ const HomePage: React.FC = () => {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
+              justifyContent: 'flex-start',
               textAlign: 'center',
               padding: 4,
+              paddingTop: 8,
             }}
           >
             {/* Main Title with Antique Marine Styling */}
