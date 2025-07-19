@@ -1,0 +1,21 @@
+{
+  "short_name": "Old Tom",
+  "name": "Old Tom: The Living Legend",
+  "description": "A magical Studio Ghibli-style adventure with Old Tom and his oceanic tales",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1565C0",
+  "background_color": "#E3F2FD",
+  "orientation": "portrait-primary",
+  "categories": ["education", "entertainment", "kids"],
+  "lang": "en",
+  "scope": "/",
+  "prefer_related_applications": false
+}
