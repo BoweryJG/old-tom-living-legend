@@ -19,6 +19,7 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { AccessibilityProvider } from './components/accessibility/AccessibilityProvider';
 import { ElevenLabsTTSService } from './services/elevenLabsTTS';
 import { oldTomDialogue } from './content/dialogue/oldTomVoices';
+import testImage from './assets/images/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp';
 
 // Create Studio Ghibli + Antique Marine theme
 const theme = createTheme({
@@ -112,9 +113,9 @@ const StoryPage: React.FC = () => {
   const [, setUserInteracted] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  // Your beautiful Studio Ghibli images - direct paths work better in development
+  // Use imported image for testing, fallback to public paths
   const studioGhibliImages = [
-    '/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp',
+    testImage, // This one should work!
     '/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp',
     '/2025-07-19_FLUX_1-schnell-infer_Image_21ea0.webp',
     '/2025-07-19_FLUX_1-schnell-infer_Image_278de.webp',
@@ -177,17 +178,21 @@ const StoryPage: React.FC = () => {
       const adventureText = greetingDialogue?.text + " " + wisdomDialogue?.text;
       
       await oldTomVoice.streamTextToSpeech(adventureText, 'old-tom');
+      
+      // Reset speaking state when audio ends
+      oldTomVoice.on('stream-ended', () => {
+        setIsOldTomSpeaking(false);
+        setOldTomAnimation('idle');
+        setCurrentMood('peaceful');
+      });
+      
     } catch (error) {
       console.error('Error with Old Tom voice:', error);
-      // Show visual feedback instead of audio on error
-      setOldTomAnimation('greeting');
-    }
-    
-    setTimeout(() => {
+      // Reset state immediately if voice fails
       setIsOldTomSpeaking(false);
-      setOldTomAnimation('idle');
+      setOldTomAnimation('greeting');
       setCurrentMood('peaceful');
-    }, 8000);
+    }
   };
 
   const handleOpenChat = () => {
