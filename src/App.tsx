@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box, Typography, Button } from '@mui/material';
@@ -16,9 +15,6 @@ import { OldTomComfortCharacter } from './components/emotional/OldTomComfortChar
 import { EducationalProgressTracker } from './components/education/EducationalProgressTracker';
 import { CelebrationAnimations } from './components/education/CelebrationAnimations';
 import { MagicalGestureRecognizer } from './components/interactions/MagicalGestureRecognizer';
-import { OceanSurfaceInteraction } from './components/interactions/OceanSurfaceInteraction';
-import { StoryBreadcrumbs } from './components/navigation/StoryBreadcrumbs';
-import { LoadingScreen } from './components/ui/LoadingScreen';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { AccessibilityProvider } from './components/accessibility/AccessibilityProvider';
 import { ElevenLabsTTSService } from './services/elevenLabsTTS';
@@ -518,39 +514,8 @@ const StoryPage: React.FC = () => {
   );
 };
 
-// Ocean Exploration Page
-const OceanPage: React.FC = () => {
-  return (
-    <Box sx={{ position: 'relative', minHeight: '100vh' }}>
-      <OceanParticles intensity="high" />
-      <OldTomCharacter
-        isVisible={true}
-        animationType="swimming"
-        position="center"
-        size="large"
-        isAnimating={true}
-      />
-    </Box>
-  );
-};
-
-// Chat/Conversation Page
-const ChatPage: React.FC = () => {
-  return (
-    <Box sx={{ position: 'relative', minHeight: '100vh' }}>
-      <OceanParticles intensity="medium" />
-      <OldTomChat open={true} onClose={() => {}} />
-    </Box>
-  );
-};
 
 const App: React.FC = () => {
-  const [loading, setLoading] = useState(false); // NO FUCKING LOADING SCREEN
-
-  React.useEffect(() => {
-    // NO DELAY - GO STRAIGHT TO THE EXPERIENCE
-    setLoading(false);
-  }, []);
 
   return (
     <ErrorBoundary>
