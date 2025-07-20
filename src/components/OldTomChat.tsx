@@ -87,10 +87,13 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
             'Shared feast of whale tongues and lips with humans',
             'Lived from 1895-1930 in Twofold Bay'
           ],
-          conversationHistory: messages.slice(-5).map(m => ({
-            role: m.sender === 'user' ? 'user' : 'assistant',
-            content: m.text
-          })),
+          conversationHistory: messages
+            .slice(-5)
+            .filter(m => m && m.sender && m.text)
+            .map(m => ({
+              role: m.sender === 'user' ? 'user' : 'assistant',
+              content: m.text
+            })),
           currentMood: 'wise and welcoming',
           backstory: 'Old Tom was a legendary orca who formed an unprecedented partnership with the Davidson family whalers in Eden, Australia. For over 30 years, he led his pod in cooperative whale hunting, using sophisticated communication to guide human boats to prey. This true story represents one of history\'s most remarkable examples of interspecies cooperation.'
         }

@@ -70,7 +70,9 @@ class OpenAIService {
       
       const messages: ChatMessage[] = [
         { role: 'system', content: systemPrompt },
-        ...context.conversationHistory.slice(-10), // Last 10 messages for context
+        ...(context.conversationHistory || [])
+          .filter(msg => msg && msg.role && msg.content)
+          .slice(-10), // Last 10 messages for context
         { role: 'user', content: userMessage },
       ];
 
@@ -83,9 +85,20 @@ class OpenAIService {
         frequency_penalty: 0.3,
       });
 
-      const assistantMessage = response.data.choices[0]?.message?.content;
-      if (!assistantMessage) {
-        throw new Error('No response received from OpenAI');
+      // Safely extract the response with multiple fallback checks
+      const choices = response.data?.choices;
+      if (!choices || !Array.isArray(choices) || choices.length === 0) {
+        throw new Error('No choices received from OpenAI');
+      }
+
+      const firstChoice = choices[0];
+      if (!firstChoice || !firstChoice.message) {
+        throw new Error('Invalid response structure from OpenAI');
+      }
+
+      const assistantMessage = firstChoice.message.content;
+      if (!assistantMessage || typeof assistantMessage !== 'string') {
+        throw new Error('No valid content received from OpenAI');
       }
 
       return assistantMessage.trim();
