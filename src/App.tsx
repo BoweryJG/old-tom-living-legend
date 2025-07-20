@@ -20,6 +20,14 @@ import { AccessibilityProvider } from './components/accessibility/AccessibilityP
 import { ElevenLabsTTSService } from './services/elevenLabsTTS';
 import { oldTomDialogue } from './content/dialogue/oldTomVoices';
 
+// Import all FLUX images as modules - this WILL work
+import image1 from './assets/images/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp';
+import image2 from './assets/images/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp';
+import image3 from './assets/images/2025-07-19_FLUX_1-schnell-infer_Image_21ea0.webp';
+import image4 from './assets/images/2025-07-19_FLUX_1-schnell-infer_Image_278de.webp';
+import image5 from './assets/images/2025-07-19_FLUX_1-schnell-infer_Image_b48b2.webp';
+import image6 from './assets/images/2025-07-19_FLUX_1-schnell-infer_Image_d2891.webp';
+
 // Create Studio Ghibli + Antique Marine theme
 const theme = createTheme({
   palette: {
@@ -112,14 +120,14 @@ const StoryPage: React.FC = () => {
   const [, setUserInteracted] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  // Simple public folder paths - these SHOULD work
+  // Use imported images - GUARANTEED to work
   const studioGhibliImages = [
-    '/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp',
-    '/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp',
-    '/2025-07-19_FLUX_1-schnell-infer_Image_21ea0.webp',
-    '/2025-07-19_FLUX_1-schnell-infer_Image_278de.webp',
-    '/2025-07-19_FLUX_1-schnell-infer_Image_b48b2.webp',
-    '/2025-07-19_FLUX_1-schnell-infer_Image_d2891.webp'
+    image1,
+    image2, 
+    image3,
+    image4,
+    image5,
+    image6
   ];
 
   // Preload images to ensure they display
