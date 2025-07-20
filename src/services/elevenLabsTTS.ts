@@ -189,25 +189,39 @@ export class ElevenLabsTTSService extends EventEmitter {
 
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Configure Old Tom's voice characteristics
+    // Configure Old Tom's voice characteristics - 80-year-old Australian sea captain
     if (agentId === 'old-tom') {
-      // Find a deep male voice
+      // Find the best voice for an old Australian sea captain
       const voices = window.speechSynthesis.getVoices();
-      const maleVoice = voices.find(voice => 
-        voice.name.toLowerCase().includes('male') ||
-        voice.name.toLowerCase().includes('daniel') ||
-        voice.name.toLowerCase().includes('david') ||
-        voice.name.toLowerCase().includes('alex') ||
-        voice.name.toLowerCase().includes('fred')
+      
+      // First try to find Australian or English voices
+      let oldTomVoice = voices.find(voice => 
+        voice.lang.includes('en-AU') || // Australian English
+        voice.name.toLowerCase().includes('australian') ||
+        voice.name.toLowerCase().includes('gordon') || // Often an older male voice
+        voice.name.toLowerCase().includes('fred') ||   // Usually older/gruff
+        voice.name.toLowerCase().includes('arthur')
       );
       
-      if (maleVoice) {
-        utterance.voice = maleVoice;
+      // Fallback to any deep male voice
+      if (!oldTomVoice) {
+        oldTomVoice = voices.find(voice => 
+          voice.name.toLowerCase().includes('male') ||
+          voice.name.toLowerCase().includes('daniel') ||
+          voice.name.toLowerCase().includes('david') ||
+          voice.name.toLowerCase().includes('alex')
+        );
       }
       
-      utterance.pitch = 0.7; // Lower pitch for Old Tom
-      utterance.rate = 0.8;   // Slower, more deliberate speech
-      utterance.volume = 0.9;
+      if (oldTomVoice) {
+        utterance.voice = oldTomVoice;
+        console.log('Using voice for Old Tom:', oldTomVoice.name);
+      }
+      
+      // Configure for 80-year-old sea captain
+      utterance.pitch = 0.5;  // Much lower pitch - old and weathered
+      utterance.rate = 0.6;   // Very slow, deliberate speech of an elder
+      utterance.volume = 0.8; // Slightly quieter, not shouting
     }
 
     utterance.onstart = () => {

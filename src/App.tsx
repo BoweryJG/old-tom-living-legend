@@ -112,15 +112,26 @@ const StoryPage: React.FC = () => {
   const [, setUserInteracted] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  // Your beautiful Studio Ghibli images
+  // Your beautiful Studio Ghibli images - use process.env.PUBLIC_URL for correct paths
   const studioGhibliImages = [
-    '/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp',
-    '/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp',
-    '/2025-07-19_FLUX_1-schnell-infer_Image_21ea0.webp',
-    '/2025-07-19_FLUX_1-schnell-infer_Image_278de.webp',
-    '/2025-07-19_FLUX_1-schnell-infer_Image_b48b2.webp',
-    '/2025-07-19_FLUX_1-schnell-infer_Image_d2891.webp'
+    `${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp`,
+    `${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp`,
+    `${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_21ea0.webp`,
+    `${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_278de.webp`,
+    `${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_b48b2.webp`,
+    `${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_d2891.webp`
   ];
+
+  // Preload images to ensure they display
+  React.useEffect(() => {
+    console.log('Preloading FLUX images...');
+    studioGhibliImages.forEach((imagePath, index) => {
+      const img = new Image();
+      img.onload = () => console.log(`✅ Loaded image ${index + 1}:`, imagePath);
+      img.onerror = () => console.error(`❌ Failed to load image ${index + 1}:`, imagePath);
+      img.src = imagePath;
+    });
+  }, []);
 
   // Auto-cycle through your beautiful images
   React.useEffect(() => {
@@ -190,10 +201,11 @@ const StoryPage: React.FC = () => {
       sx={{ 
         position: 'relative', 
         minHeight: '100vh',
-        background: `linear-gradient(135deg, rgba(10,26,46,0.3) 0%, rgba(22,83,126,0.3) 25%, rgba(46,139,87,0.3) 75%, rgba(26,77,58,0.3) 100%), url('${studioGhibliImages[currentImageIndex]}')`,
+        background: `linear-gradient(135deg, rgba(10,26,46,0.8) 0%, rgba(22,83,126,0.8) 25%, rgba(46,139,87,0.8) 75%, rgba(26,77,58,0.8) 100%), url('${studioGhibliImages[currentImageIndex]}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
+        backgroundColor: '#0a1a2e', // Fallback color if images don't load
         overflowX: 'hidden',
         overflowY: 'auto',
       }}
@@ -345,7 +357,7 @@ const StoryPage: React.FC = () => {
           right: 20,
           width: 300,
           height: 400,
-          backgroundImage: `url('/2025-07-19_FLUX_1-schnell-infer_Image_b48b2.webp')`,
+          backgroundImage: `url('${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_b48b2.webp')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
@@ -364,7 +376,7 @@ const StoryPage: React.FC = () => {
           left: 20,
           width: 200,
           height: 300,
-          backgroundImage: `url('/2025-07-19_FLUX_1-schnell-infer_Image_d2891.webp')`,
+          backgroundImage: `url('${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_d2891.webp')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
@@ -383,7 +395,7 @@ const StoryPage: React.FC = () => {
           right: 20,
           width: 350,
           height: 250,
-          backgroundImage: `url('/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp')`,
+          backgroundImage: `url('${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           borderRadius: 3,
