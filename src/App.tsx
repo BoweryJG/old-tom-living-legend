@@ -409,29 +409,54 @@ const StoryPage: React.FC = () => {
 
       {/* Educational Interfaces - RESTORED! */}
       <EducationalProgressTracker
-        currentChapter={currentChapter}
-        totalChapters={6}
-        achievementsUnlocked={[]}
         learningObjectives={[
-          'Understanding whale communication',
-          'Learning about historical partnerships',
-          'Marine conservation awareness'
+          {
+            id: 'whale-communication',
+            title: 'Understanding whale communication',
+            childFriendlyTitle: 'How Whales Talk',
+            description: 'Learn how Old Tom and his pod communicate',
+            category: 'marine-biology',
+            difficulty: 'beginner',
+            progress: 75,
+            completed: false,
+            discovered: true,
+            mastery: 60
+          }
         ]}
-        userAge={userAge}
-        onAchievementUnlocked={(achievement) => console.log('Achievement:', achievement)}
+        achievements={[
+          {
+            id: 'first-meeting',
+            title: 'First Meeting with Old Tom',
+            childFriendlyTitle: 'Met Old Tom!',
+            description: 'You have met the legendary Old Tom',
+            icon: '🐋',
+            rarity: 'common',
+            unlockedAt: new Date(),
+            category: 'friendship'
+          }
+        ]}
+        onObjectiveComplete={(id) => console.log('Objective completed:', id)}
+        onAchievementUnlock={(id) => console.log('Achievement unlocked:', id)}
+        showCelebration={true}
       />
 
       <AskOldTomInterface
-        onQuestion={(question) => console.log('Question for Old Tom:', question)}
-        isVisible={true}
-        position="bottom-right"
+        childAge={userAge}
+        maxMessages={20}
+        showSuggestions={true}
+        enableVoice={true}
+        enableEmotionalAI={true}
+        onLearningProgress={(progress) => console.log('Learning progress:', progress)}
       />
 
-      <CelebrationAnimations
-        isVisible={false}
-        achievementType="story-completion"
-        onAnimationComplete={() => console.log('Celebration complete')}
-      />
+      {showCelebration && (
+        <CelebrationAnimations
+          type={showCelebration.type}
+          visible={showCelebration.visible}
+          onComplete={() => setShowCelebration(null)}
+          intensity="moderate"
+        />
+      )}
 
       {/* Old Tom Chat Interface */}
       <OldTomChat 
