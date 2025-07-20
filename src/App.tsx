@@ -109,6 +109,8 @@ const StoryPage: React.FC = () => {
   const [chatVisible, setChatVisible] = useState(false);
   const [isOldTomSpeaking, setIsOldTomSpeaking] = useState(true);
   const [currentMood, setCurrentMood] = useState<'peaceful' | 'mysterious' | 'adventurous' | 'nostalgic' | 'dramatic'>('adventurous');
+  const [currentChapter, setCurrentChapter] = useState(1);
+  const [userAge, setUserAge] = useState(8);
   const [showCelebration, setShowCelebration] = useState<{ type: 'achievement' | 'learning' | 'discovery' | 'mastery' | 'friendship'; visible: boolean } | null>({ type: 'discovery', visible: true });
   const [emotionalState, setEmotionalState] = useState({
     comfort: 5,
@@ -281,6 +283,50 @@ const StoryPage: React.FC = () => {
           </Typography>
         </Box>
 
+        {/* Age Selection & Story Chapters */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', mb: 3 }}>
+          {/* Age Selection */}
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            {[{age: 4, label: '3-5 years'}, {age: 7, label: '6-8 years'}, {age: 10, label: '9-12 years'}].map((ageGroup) => (
+              <Button
+                key={ageGroup.age}
+                variant={userAge >= ageGroup.age - 1 && userAge <= ageGroup.age + 1 ? "contained" : "outlined"}
+                onClick={() => setUserAge(ageGroup.age)}
+                sx={{
+                  color: '#FFFFFF',
+                  borderColor: '#D4AF37',
+                  backgroundColor: userAge >= ageGroup.age - 1 && userAge <= ageGroup.age + 1 ? '#D4AF37' : 'transparent',
+                  fontSize: '0.9rem',
+                  '&:hover': { backgroundColor: 'rgba(212, 175, 55, 0.3)' }
+                }}
+              >
+                {ageGroup.label}
+              </Button>
+            ))}
+          </Box>
+
+          {/* Story Chapters */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {['The Angry Ocean', 'George\'s First Fish', 'Old Tom\'s Signal', 'The Great Hunt', 'The Hero\'s Sacrifice', 'The Museum Gift'].map((chapterName, index) => (
+              <Button
+                key={index + 1}
+                variant={currentChapter === index + 1 ? "contained" : "outlined"}
+                size="small"
+                onClick={() => setCurrentChapter(index + 1)}
+                sx={{
+                  color: '#FFFFFF',
+                  borderColor: '#2E8B57',
+                  backgroundColor: currentChapter === index + 1 ? '#2E8B57' : 'transparent',
+                  fontSize: '0.7rem',
+                  '&:hover': { backgroundColor: 'rgba(46, 139, 87, 0.3)' }
+                }}
+              >
+                Ch.{index + 1}
+              </Button>
+            ))}
+          </Box>
+        </Box>
+
         {/* Interactive Buttons */}
         <Box sx={{ 
           display: 'flex', 
@@ -347,7 +393,7 @@ const StoryPage: React.FC = () => {
         </Box>
       </MagicalGestureRecognizer>
       
-      {/* AI-Integrated Old Tom Character */}
+      {/* Interactive AI Old Tom Character - The REAL one! */}
       <AIIntegratedCharacter
         characterId="old-tom"
         position="center"
@@ -361,17 +407,31 @@ const StoryPage: React.FC = () => {
         autoInitialize={true}
       />
 
-
-      {/* Traditional Old Tom Character */}
-      <OldTomCharacter
-        isVisible={true}
-        animationType={oldTomAnimation}
-        position="center"
-        size="large"
-        isAnimating={true}
-        onAnimationComplete={() => setOldTomAnimation('speaking')}
+      {/* Educational Interfaces - RESTORED! */}
+      <EducationalProgressTracker
+        currentChapter={currentChapter}
+        totalChapters={6}
+        achievementsUnlocked={[]}
+        learningObjectives={[
+          'Understanding whale communication',
+          'Learning about historical partnerships',
+          'Marine conservation awareness'
+        ]}
+        userAge={userAge}
+        onAchievementUnlocked={(achievement) => console.log('Achievement:', achievement)}
       />
 
+      <AskOldTomInterface
+        onQuestion={(question) => console.log('Question for Old Tom:', question)}
+        isVisible={true}
+        position="bottom-right"
+      />
+
+      <CelebrationAnimations
+        isVisible={false}
+        achievementType="story-completion"
+        onAnimationComplete={() => console.log('Celebration complete')}
+      />
 
       {/* Old Tom Chat Interface */}
       <OldTomChat 

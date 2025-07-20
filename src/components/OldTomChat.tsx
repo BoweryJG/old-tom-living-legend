@@ -23,6 +23,7 @@ import {
   Person as PersonIcon,
 } from '@mui/icons-material';
 import { ElevenLabsTTSService } from '../services/elevenLabsTTS';
+import { openaiService } from '../services/openaiService';
 
 interface ChatMessage {
   id: string;
@@ -65,18 +66,42 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
   }, [open]);
 
   const generateOldTomResponse = async (userMessage: string): Promise<string> => {
-    // This would integrate with OpenAI GPT - for now using predefined responses
-    const responses = [
-      `Ah, ${userMessage.toLowerCase().includes('whale') ? 'whales are magnificent creatures indeed!' : 'that reminds me of a tale from the deep...'} You know, in my day, we orcas worked alongside the Davidson family whalers. We had what they called the "Law of the Tongue" - a sacred partnership where we'd guide the whalers to the great baleen whales, and in return, we'd feast on the tongues and lips. It was a fair trade that lasted for generations.`,
+    try {
+      // Use real OpenAI API with Old Tom's character
+      const response = await openaiService.generateCharacterResponse(
+        'Old Tom', 
+        userMessage,
+        {
+          characterPersonality: [
+            'wise 80-year-old orca',
+            'Australian sea captain personality',
+            'gentle but experienced',
+            'storyteller',
+            'protective of children',
+            'nostalgic about Davidson family partnership'
+          ],
+          memories: [
+            'Worked with Davidson whalers for 30+ years in Eden Bay',
+            'Led whaling expeditions using tail signals',
+            'Protected ships during storms',
+            'Shared feast of whale tongues and lips with humans',
+            'Lived from 1895-1930 in Twofold Bay'
+          ],
+          conversationHistory: messages.slice(-5).map(m => ({
+            role: m.sender === 'user' ? 'user' : 'assistant',
+            content: m.text
+          })),
+          currentMood: 'wise and welcoming',
+          backstory: 'Old Tom was a legendary orca who formed an unprecedented partnership with the Davidson family whalers in Eden, Australia. For over 30 years, he led his pod in cooperative whale hunting, using sophisticated communication to guide human boats to prey. This true story represents one of history\'s most remarkable examples of interspecies cooperation.'
+        }
+      );
       
-      `Your curiosity reminds me of young Thomas Davidson, who first learned to trust our pod. ${userMessage.toLowerCase().includes('story') ? 'Here\'s a story for you:' : 'Let me share this with you:'} One stormy morning in 1895, we spotted a massive blue whale near the bay. I led the whalers through treacherous waters, breaching high to signal the direction. The trust between human and orca was unbreakable.`,
-      
-      `Wise words, young one! ${userMessage.toLowerCase().includes('learn') ? 'Learning is like navigating the ocean currents' : 'That takes me back to...'} - you must respect the sea to understand it. We orcas have lived in these waters for thousands of years, passing down knowledge through our songs. Each pod has its own dialect, its own stories. Would you like to hear one of our ancient songs?`,
-      
-      `Ho ho! ${userMessage.toLowerCase().includes('adventure') ? 'Adventures were plentiful in those days!' : 'That reminds me of the old days...'} I remember the time we helped the Davidsons during the great storm of 1902. The waters were so rough that even experienced whalers feared for their lives. But our pod surrounded their boat, creating a living shield against the waves. That's when they truly understood - we weren't just hunters, we were partners.`
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
+      return response;
+    } catch (error) {
+      console.error('OpenAI API Error:', error);
+      // Fallback to an authentic Old Tom response if API fails
+      return `G'day there, young navigator! *speaks in weathered Australian accent* The ocean currents are a bit choppy today, making it hard for this old whale to share his tales properly. But don't you worry - Old Tom has weathered many storms in these waters of Eden Bay. Would you like to hear about the time we helped the Davidson lads bring in a massive blue whale?`;
+    }
   };
 
   const handleSendMessage = async () => {
