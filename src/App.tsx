@@ -112,14 +112,14 @@ const StoryPage: React.FC = () => {
   const [, setUserInteracted] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  // Your beautiful Studio Ghibli images - use process.env.PUBLIC_URL for correct paths
+  // Your beautiful Studio Ghibli images - direct paths work better in development
   const studioGhibliImages = [
-    `${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp`,
-    `${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp`,
-    `${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_21ea0.webp`,
-    `${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_278de.webp`,
-    `${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_b48b2.webp`,
-    `${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_d2891.webp`
+    '/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp',
+    '/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp',
+    '/2025-07-19_FLUX_1-schnell-infer_Image_21ea0.webp',
+    '/2025-07-19_FLUX_1-schnell-infer_Image_278de.webp',
+    '/2025-07-19_FLUX_1-schnell-infer_Image_b48b2.webp',
+    '/2025-07-19_FLUX_1-schnell-infer_Image_d2891.webp'
   ];
 
   // Preload images to ensure they display
@@ -349,63 +349,31 @@ const StoryPage: React.FC = () => {
         autoInitialize={true}
       />
 
-      {/* YOUR AMAZING CHARACTER DESIGNS - FRONT AND CENTER */}
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 20,
-          right: 20,
-          width: 300,
-          height: 400,
-          backgroundImage: `url('${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_b48b2.webp')`,
-          backgroundSize: 'contain',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
-          zIndex: 1000,
-          animation: 'float 3s ease-in-out infinite',
-          border: '2px solid rgba(255,255,255,0.3)',
-          borderRadius: 2,
-        }}
-      />
-      
-      {/* George Davidson Character */}
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 20,
-          left: 20,
-          width: 200,
-          height: 300,
-          backgroundImage: `url('${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_d2891.webp')`,
-          backgroundSize: 'contain',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
-          zIndex: 1000,
-          animation: 'sway 4s ease-in-out infinite',
-          border: '2px solid rgba(255,255,255,0.3)',
-          borderRadius: 2,
-        }}
-      />
-      
-      {/* Studio Ghibli Scene - This was the yellow box! */}
-      <Box
-        sx={{
-          position: 'fixed',
-          top: 20,
-          right: 20,
-          width: 350,
-          height: 250,
-          backgroundImage: `url('${process.env.PUBLIC_URL}/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          borderRadius: 3,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-          border: '3px solid #FFD700',
-          zIndex: 999,
-          animation: 'glow 2s ease-in-out infinite alternate',
-          backgroundColor: 'rgba(0,0,0,0.8)', // Fallback if image doesn't load
-        }}
-      />
+      {/* FLUX Images - Only show if they actually load */}
+      {studioGhibliImages.map((imagePath, index) => (
+        <img 
+          key={index}
+          src={imagePath}
+          alt={`Old Tom Scene ${index + 1}`}
+          onLoad={() => console.log(`✅ Image ${index + 1} loaded successfully`)}
+          onError={() => console.error(`❌ Image ${index + 1} failed to load`)}
+          style={{
+            position: 'fixed',
+            bottom: index === 0 ? 20 : index === 1 ? 20 : 20,
+            right: index === 0 ? 20 : 'auto',
+            left: index === 1 ? 20 : index === 2 ? 'auto' : 'auto',
+            top: index === 2 ? 20 : 'auto',
+            width: index === 0 ? 300 : index === 1 ? 200 : index === 2 ? 350 : 0,
+            height: index === 0 ? 400 : index === 1 ? 300 : index === 2 ? 250 : 0,
+            objectFit: 'contain',
+            zIndex: 1000,
+            borderRadius: 8,
+            border: '2px solid rgba(255,255,255,0.3)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+            display: index > 2 ? 'none' : 'block', // Only show first 3 images as overlays
+          }}
+        />
+      ))}
 
       {/* Traditional Old Tom Character */}
       <OldTomCharacter
