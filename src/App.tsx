@@ -351,7 +351,60 @@ const StoryPage: React.FC = () => {
         autoInitialize={true}
       />
 
-      {/* Traditional Old Tom Character - ALWAYS VISIBLE AND ANIMATED */}
+      {/* YOUR AMAZING CHARACTER DESIGNS - FRONT AND CENTER */}
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          width: 300,
+          height: 400,
+          backgroundImage: `url('/2025-07-19_FLUX_1-schnell-infer_Image_b48b2.webp')`,
+          backgroundSize: 'contain',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          zIndex: 1000,
+          animation: 'float 3s ease-in-out infinite',
+        }}
+      />
+      
+      {/* George Davidson Character */}
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 20,
+          left: 20,
+          width: 200,
+          height: 300,
+          backgroundImage: `url('/2025-07-19_FLUX_1-schnell-infer_Image_d2891.webp')`,
+          backgroundSize: 'contain',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          zIndex: 1000,
+          animation: 'sway 4s ease-in-out infinite',
+        }}
+      />
+      
+      {/* Studio Ghibli Scene */}
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 20,
+          right: 20,
+          width: 350,
+          height: 250,
+          backgroundImage: `url('/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          borderRadius: 3,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          border: '3px solid #FFD700',
+          zIndex: 999,
+          animation: 'glow 2s ease-in-out infinite alternate',
+        }}
+      />
+
+      {/* Traditional Old Tom Character */}
       <OldTomCharacter
         isVisible={true}
         animationType={oldTomAnimation}
@@ -560,6 +613,22 @@ const App: React.FC = () => {
             0% { opacity: 0; transform: scale(0) rotate(0deg); }
             50% { opacity: 1; transform: scale(1) rotate(180deg); }
             100% { opacity: 0; transform: scale(0) rotate(360deg); }
+          }
+
+          @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+          }
+
+          @keyframes sway {
+            0%, 100% { transform: translateX(0px) rotate(0deg); }
+            25% { transform: translateX(-5px) rotate(-2deg); }
+            75% { transform: translateX(5px) rotate(2deg); }
+          }
+
+          @keyframes glow {
+            0% { box-shadow: 0 8px 32px rgba(255,215,0,0.3), 0 0 20px rgba(255,215,0,0.2); }
+            100% { box-shadow: 0 12px 40px rgba(255,215,0,0.6), 0 0 30px rgba(255,215,0,0.4); }
           }
         `}</style>
         </ThemeProvider>
