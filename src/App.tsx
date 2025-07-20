@@ -18,6 +18,7 @@ import { MagicalGestureRecognizer } from './components/interactions/MagicalGestu
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { AccessibilityProvider } from './components/accessibility/AccessibilityProvider';
 import { ElevenLabsTTSService } from './services/elevenLabsTTS';
+import { oldTomDialogue } from './content/dialogue/oldTomVoices';
 
 // Create Studio Ghibli + Antique Marine theme
 const theme = createTheme({
@@ -159,10 +160,10 @@ const StoryPage: React.FC = () => {
         await oldTomVoice.initialize();
       }
       
-      const adventureText = `Magnificent! You've awakened the spirit of adventure! 
-        Let me show you the depths of our ocean realm. Each of these scenes holds secrets - 
-        shipwrecks of old, pods of whales singing ancient songs, coral gardens that glow 
-        in the moonlight. Which part of our world calls to your heart?`;
+      // Use the amazing character dialogue instead of generic text
+      const greetingDialogue = oldTomDialogue.find(d => d.id === 'tom_ch1_intro');
+      const wisdomDialogue = oldTomDialogue.find(d => d.id === 'tom_ch1_wisdom');
+      const adventureText = greetingDialogue?.text + " " + wisdomDialogue?.text;
       
       await oldTomVoice.streamTextToSpeech(adventureText, 'old-tom');
     } catch (error) {
@@ -350,6 +351,8 @@ const StoryPage: React.FC = () => {
           backgroundPosition: 'center',
           zIndex: 1000,
           animation: 'float 3s ease-in-out infinite',
+          border: '2px solid rgba(255,255,255,0.3)',
+          borderRadius: 2,
         }}
       />
       
@@ -367,10 +370,12 @@ const StoryPage: React.FC = () => {
           backgroundPosition: 'center',
           zIndex: 1000,
           animation: 'sway 4s ease-in-out infinite',
+          border: '2px solid rgba(255,255,255,0.3)',
+          borderRadius: 2,
         }}
       />
       
-      {/* Studio Ghibli Scene */}
+      {/* Studio Ghibli Scene - This was the yellow box! */}
       <Box
         sx={{
           position: 'fixed',
@@ -386,6 +391,7 @@ const StoryPage: React.FC = () => {
           border: '3px solid #FFD700',
           zIndex: 999,
           animation: 'glow 2s ease-in-out infinite alternate',
+          backgroundColor: 'rgba(0,0,0,0.8)', // Fallback if image doesn't load
         }}
       />
 
