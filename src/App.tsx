@@ -19,7 +19,6 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { AccessibilityProvider } from './components/accessibility/AccessibilityProvider';
 import { ElevenLabsTTSService } from './services/elevenLabsTTS';
 import { oldTomDialogue } from './content/dialogue/oldTomVoices';
-import testImage from './assets/images/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp';
 
 // Create Studio Ghibli + Antique Marine theme
 const theme = createTheme({
@@ -113,9 +112,9 @@ const StoryPage: React.FC = () => {
   const [, setUserInteracted] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  // Use imported image for testing, fallback to public paths
+  // Simple public folder paths - these SHOULD work
   const studioGhibliImages = [
-    testImage, // This one should work!
+    '/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp',
     '/2025-07-19_FLUX_1-schnell-infer_Image_158ba.webp',
     '/2025-07-19_FLUX_1-schnell-infer_Image_21ea0.webp',
     '/2025-07-19_FLUX_1-schnell-infer_Image_278de.webp',
