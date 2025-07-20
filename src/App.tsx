@@ -129,28 +129,20 @@ const StoryPage: React.FC = () => {
     return () => clearInterval(imageInterval);
   }, [studioGhibliImages.length]);
 
-  // Auto-start Old Tom talking immediately
+  // Initialize audio only, don't auto-start on iOS
   React.useEffect(() => {
-    const startTalking = async () => {
+    const initializeAudio = async () => {
       try {
-        await oldTomVoice.initialize();
-        
-        const greetingText = `Ahoy there, young navigator! I am Old Tom, the great orca of Eden Bay. 
-          Welcome to my magical ocean realm! Look around at these beautiful waters - each wave tells a story, 
-          each current holds an adventure. For decades, my pod and I worked alongside the Davidson whalers 
-          in the ancient partnership known as the "Law of the Tongue." 
-          
-          The ocean is alive with wonder! Click anywhere to dive deeper into our world, 
-          or simply watch as the magic unfolds before your eyes...`;
-        
-        await oldTomVoice.streamTextToSpeech(greetingText, 'old-tom');
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (!isIOS) {
+          await oldTomVoice.initialize();
+        }
       } catch (error) {
-        console.error('Error with Old Tom voice:', error);
+        console.error('Error initializing Old Tom voice:', error);
       }
     };
     
-    // Start immediately when page loads
-    setTimeout(startTalking, 1000);
+    initializeAudio();
   }, []);
 
   const handleTalkToOldTom = async () => {
@@ -162,6 +154,11 @@ const StoryPage: React.FC = () => {
     setUserInteracted(true);
     
     try {
+      // Initialize audio context on first user interaction (iOS requirement)
+      if (!oldTomVoice.audioContext) {
+        await oldTomVoice.initialize();
+      }
+      
       const adventureText = `Magnificent! You've awakened the spirit of adventure! 
         Let me show you the depths of our ocean realm. Each of these scenes holds secrets - 
         shipwrecks of old, pods of whales singing ancient songs, coral gardens that glow 
@@ -170,6 +167,8 @@ const StoryPage: React.FC = () => {
       await oldTomVoice.streamTextToSpeech(adventureText, 'old-tom');
     } catch (error) {
       console.error('Error with Old Tom voice:', error);
+      // Show visual feedback instead of audio on error
+      setOldTomAnimation('greeting');
     }
     
     setTimeout(() => {
@@ -224,8 +223,8 @@ const StoryPage: React.FC = () => {
             justifyContent: 'center',
             minHeight: '100vh',
             padding: 3,
-            backgroundColor: 'rgba(0,0,0,0.3)',
-            backdropFilter: 'blur(2px)',
+            backgroundColor: 'rgba(0,0,0,0.1)',
+            backdropFilter: 'blur(1px)',
           }}
         >
         {/* Title */}
@@ -400,102 +399,6 @@ const StoryPage: React.FC = () => {
         onAnimationComplete={() => setOldTomAnimation('speaking')}
       />
 
-      {/* Ask Old Tom Interface */}
-      <AskOldTomInterface
-        onQuestionSubmit={(question) => {
-          console.log('Question for Old Tom:', question);
-          setOldTomAnimation('speaking');
-        }}
-        onChatOpen={() => setChatVisible(true)}
-        showSuggestions={true}
-        enableVoiceInput={true}
-      />
-
-      {/* Emotional Feedback System */}
-      <EmotionalFeedbackSystem
-        currentContent={{
-          type: 'exploration',
-          emotionalTone: 'calm',
-          intensityLevel: 2,
-          potentialTriggers: []
-        }}
-        onStateChange={setEmotionalState}
-        onComfortAction={(action) => {
-          console.log('Comfort action:', action);
-          if (action === 'support') {
-            setEmotionalState(prev => ({ ...prev, needsSupport: true }));
-          }
-        }}
-        showControls={true}
-      />
-
-      {/* Old Tom Comfort Character */}
-      <OldTomComfortCharacter
-        emotionalState={emotionalState}
-        onComfortProvided={() => {
-          setEmotionalState(prev => ({ 
-            ...prev, 
-            needsSupport: false,
-            comfort: Math.min(5, prev.comfort + 1)
-          }));
-        }}
-        visible={emotionalState.needsSupport}
-      />
-
-      {/* Educational Progress Tracker */}
-      <EducationalProgressTracker
-        learningObjectives={[
-          {
-            id: 'marine-biology-basics',
-            title: 'Marine Biology Fundamentals',
-            childFriendlyTitle: 'Ocean Friends',
-            description: 'Learn about sea creatures and their homes',
-            category: 'marine-biology',
-            difficulty: 'beginner',
-            progress: 75,
-            completed: false,
-            discovered: true,
-            mastery: 60
-          }
-        ]}
-        achievements={[
-          {
-            id: 'first-friend',
-            title: 'First Friend',
-            childFriendlyTitle: 'Old Tom\'s New Friend',
-            description: 'Made your first connection with Old Tom',
-            icon: '🐋',
-            rarity: 'common',
-            unlockedAt: new Date(),
-            category: 'friendship'
-          }
-        ]}
-        currentActivity={{
-          type: 'exploration',
-          emotionalTone: 'calm',
-          intensityLevel: 2,
-          potentialTriggers: []
-        }}
-        onObjectiveComplete={(id) => {
-          setShowCelebration({ type: 'learning', visible: true });
-          setTimeout(() => setShowCelebration(null), 4000);
-        }}
-        onAchievementUnlock={(id) => {
-          setShowCelebration({ type: 'achievement', visible: true });
-          setTimeout(() => setShowCelebration(null), 5000);
-        }}
-        showCelebration={true}
-      />
-
-      {/* Celebration Animations */}
-      {showCelebration && (
-        <CelebrationAnimations
-          type={showCelebration.type}
-          visible={showCelebration.visible}
-          onComplete={() => setShowCelebration(null)}
-          intensity="moderate"
-        />
-      )}
 
       {/* Old Tom Chat Interface */}
       <OldTomChat 
