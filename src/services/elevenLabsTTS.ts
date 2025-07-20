@@ -6,10 +6,10 @@ import { EventEmitter } from 'events';
 let agentConfigs: any = {
   'old-tom': {
     voiceConfig: {
-      voiceId: '21m00Tcm4TlvDq8ikWAM', // Rachel voice - warm and clear
-      stability: 0.5,
-      similarityBoost: 0.9,
-      style: 0.2,
+      voiceId: 'pNInz6obpgDQGcFmaJgB', // Adam voice - deep, wise male voice
+      stability: 0.8, // More stable for wise character
+      similarityBoost: 0.7, // Less similarity for more character
+      style: 0.4, // More expressive for storytelling
       speakerBoost: true
     }
   }
@@ -122,7 +122,7 @@ export class ElevenLabsTTSService extends EventEmitter {
   }
 
   /**
-   * Stream text-to-speech with simple REST API fallback
+   * Stream text-to-speech with browser fallback
    */
   async streamTextToSpeech(text: string, agentId: string): Promise<void> {
     const voiceConfig = this.getAgentVoiceConfig(agentId);
@@ -130,46 +130,100 @@ export class ElevenLabsTTSService extends EventEmitter {
       throw new Error(`No voice configuration found for agent: ${agentId}`);
     }
 
-    // Simple REST API fallback for now
-    try {
-      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceConfig.voiceId}`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'audio/mpeg',
-          'Content-Type': 'application/json',
-          'xi-api-key': this.config.apiKey
-        },
-        body: JSON.stringify({
-          text: text,
-          model_id: 'eleven_multilingual_v2',
-          voice_settings: voiceConfig.voiceSettings
-        })
-      });
+    // Try ElevenLabs API first if we have a key
+    if (this.config.apiKey) {
+      try {
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceConfig.voiceId}`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'audio/mpeg',
+            'Content-Type': 'application/json',
+            'xi-api-key': this.config.apiKey
+          },
+          body: JSON.stringify({
+            text: text,
+            model_id: 'eleven_multilingual_v2',
+            voice_settings: voiceConfig.voiceSettings
+          })
+        });
 
-      if (!response.ok) {
-        throw new Error(`ElevenLabs API error: ${response.status}`);
+        if (response.ok) {
+          const audioBlob = await response.blob();
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const audio = new Audio(audioUrl);
+          
+          audio.oncanplaythrough = () => {
+            audio.play().catch(console.error);
+          };
+          
+          audio.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            this.emit('stream-ended');
+          };
+
+          this.emit('stream-started');
+          return;
+        }
+      } catch (error) {
+        console.warn('ElevenLabs API failed, falling back to browser TTS:', error);
       }
-
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      
-      audio.oncanplaythrough = () => {
-        audio.play().catch(console.error);
-      };
-      
-      audio.onended = () => {
-        URL.revokeObjectURL(audioUrl);
-        this.emit('stream-ended');
-      };
-
-      this.emit('stream-started');
-      
-    } catch (error) {
-      console.error('ElevenLabs TTS Error:', error);
-      this.emit('error', { type: 'tts', error });
-      throw error;
     }
+
+    // Fallback to browser's built-in text-to-speech
+    console.log('Using browser TTS fallback for Old Tom');
+    this.useBrowserTTS(text, agentId);
+  }
+
+  /**
+   * Fallback to browser's built-in speech synthesis
+   */
+  private useBrowserTTS(text: string, agentId: string): void {
+    if (!('speechSynthesis' in window)) {
+      console.error('Browser does not support speech synthesis');
+      this.emit('error', { type: 'browser-tts-not-supported' });
+      return;
+    }
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Configure Old Tom's voice characteristics
+    if (agentId === 'old-tom') {
+      // Find a deep male voice
+      const voices = window.speechSynthesis.getVoices();
+      const maleVoice = voices.find(voice => 
+        voice.name.toLowerCase().includes('male') ||
+        voice.name.toLowerCase().includes('daniel') ||
+        voice.name.toLowerCase().includes('david') ||
+        voice.name.toLowerCase().includes('alex') ||
+        voice.name.toLowerCase().includes('fred')
+      );
+      
+      if (maleVoice) {
+        utterance.voice = maleVoice;
+      }
+      
+      utterance.pitch = 0.7; // Lower pitch for Old Tom
+      utterance.rate = 0.8;   // Slower, more deliberate speech
+      utterance.volume = 0.9;
+    }
+
+    utterance.onstart = () => {
+      this.emit('stream-started');
+    };
+
+    utterance.onend = () => {
+      this.emit('stream-ended');
+    };
+
+    utterance.onerror = (error) => {
+      console.error('Browser TTS error:', error);
+      this.emit('error', { type: 'browser-tts', error });
+    };
+
+    window.speechSynthesis.speak(utterance);
   }
 
   /**
