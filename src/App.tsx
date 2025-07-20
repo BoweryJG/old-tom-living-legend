@@ -555,20 +555,12 @@ const ChatPage: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // NO FUCKING LOADING SCREEN
 
   React.useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2000);
-    return () => clearTimeout(timer);
+    // NO DELAY - GO STRAIGHT TO THE EXPERIENCE
+    setLoading(false);
   }, []);
-
-  if (loading) {
-    return (
-      <AccessibilityProvider>
-        <LoadingScreen />
-      </AccessibilityProvider>
-    );
-  }
 
   return (
     <ErrorBoundary>
