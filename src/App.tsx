@@ -574,14 +574,8 @@ const App: React.FC = () => {
           rel="stylesheet" 
         />
 
-        <Router>
-          <Routes>
-            <Route path="/" element={<StoryPage />} />
-            <Route path="/story" element={<StoryPage />} />
-            <Route path="/ocean" element={<OceanPage />} />
-            <Route path="/chat" element={<ChatPage />} />
-          </Routes>
-        </Router>
+        {/* NO FUCKING ROUTING - GO STRAIGHT TO OLD TOM EXPERIENCE */}
+        <StoryPage />
 
         {/* Global CSS Animations */}
         <style jsx global>{`
