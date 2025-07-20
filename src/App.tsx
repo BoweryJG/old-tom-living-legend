@@ -18,7 +18,6 @@ import { MagicalGestureRecognizer } from './components/interactions/MagicalGestu
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { AccessibilityProvider } from './components/accessibility/AccessibilityProvider';
 import { ElevenLabsTTSService } from './services/elevenLabsTTS';
-import { oldTomDialogue } from './content/dialogue/oldTomVoices';
 
 // Import all FLUX images as modules - this WILL work
 import image1 from './assets/images/2025-07-19_FLUX_1-schnell-infer_Image_7b1cc.webp';
@@ -181,10 +180,10 @@ const StoryPage: React.FC = () => {
         await oldTomVoice.initialize();
       }
       
-      // Use the amazing character dialogue instead of generic text
-      const greetingDialogue = oldTomDialogue.find(d => d.id === 'tom_ch1_intro');
-      const wisdomDialogue = oldTomDialogue.find(d => d.id === 'tom_ch1_wisdom');
-      const adventureText = greetingDialogue?.text + " " + wisdomDialogue?.text;
+      const adventureText = `Magnificent! You've awakened the spirit of adventure! 
+        Let me show you the depths of our ocean realm. Each of these scenes holds secrets - 
+        shipwrecks of old, pods of whales singing ancient songs, coral gardens that glow 
+        in the moonlight. Which part of our world calls to your heart?`;
       
       await oldTomVoice.streamTextToSpeech(adventureText, 'old-tom');
       
