@@ -361,31 +361,6 @@ const StoryPage: React.FC = () => {
         autoInitialize={true}
       />
 
-      {/* FLUX Images - Only show if they actually load */}
-      {studioGhibliImages.map((imagePath, index) => (
-        <img 
-          key={index}
-          src={imagePath}
-          alt={`Old Tom Scene ${index + 1}`}
-          onLoad={() => console.log(`✅ Image ${index + 1} loaded successfully`)}
-          onError={() => console.error(`❌ Image ${index + 1} failed to load`)}
-          style={{
-            position: 'fixed',
-            bottom: index === 0 ? 20 : index === 1 ? 20 : 20,
-            right: index === 0 ? 20 : 'auto',
-            left: index === 1 ? 20 : index === 2 ? 'auto' : 'auto',
-            top: index === 2 ? 20 : 'auto',
-            width: index === 0 ? 300 : index === 1 ? 200 : index === 2 ? 350 : 0,
-            height: index === 0 ? 400 : index === 1 ? 300 : index === 2 ? 250 : 0,
-            objectFit: 'contain',
-            zIndex: 1000,
-            borderRadius: 8,
-            border: '2px solid rgba(255,255,255,0.3)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-            display: index > 2 ? 'none' : 'block', // Only show first 3 images as overlays
-          }}
-        />
-      ))}
 
       {/* Traditional Old Tom Character */}
       <OldTomCharacter
@@ -471,6 +446,17 @@ const App: React.FC = () => {
           @keyframes glow {
             0% { box-shadow: 0 8px 32px rgba(255,215,0,0.3), 0 0 20px rgba(255,215,0,0.2); }
             100% { box-shadow: 0 12px 40px rgba(255,215,0,0.6), 0 0 30px rgba(255,215,0,0.4); }
+          }
+
+          @keyframes shimmer {
+            0% { opacity: 0.3; transform: translateX(-100%); }
+            50% { opacity: 0.8; transform: translateX(0%); }
+            100% { opacity: 0.3; transform: translateX(100%); }
+          }
+
+          @keyframes sparkle {
+            0%, 100% { opacity: 0.3; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1.5); }
           }
         `}</style>
         </ThemeProvider>
