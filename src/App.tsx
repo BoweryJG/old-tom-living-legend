@@ -17,7 +17,6 @@ import { EducationalProgressTracker } from './components/education/EducationalPr
 import { CelebrationAnimations } from './components/education/CelebrationAnimations';
 import { MagicalGestureRecognizer } from './components/interactions/MagicalGestureRecognizer';
 import { OceanSurfaceInteraction } from './components/interactions/OceanSurfaceInteraction';
-import { ChildFriendlyNavigation } from './components/navigation/ChildFriendlyNavigation';
 import { StoryBreadcrumbs } from './components/navigation/StoryBreadcrumbs';
 import { LoadingScreen } from './components/ui/LoadingScreen';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
@@ -206,16 +205,7 @@ const StoryPage: React.FC = () => {
       {/* 3D Ocean Environment */}
       <OceanParticles intensity="high" />
       
-      {/* Child-Friendly Navigation */}
-      <ChildFriendlyNavigation
-        currentProgress={{
-          totalSteps: 10,
-          completedSteps: 3,
-          currentChapter: "Meeting Old Tom"
-        }}
-        onSettingsOpen={() => {}}
-        onHelpOpen={() => {}}
-      />
+      {/* NO NAVIGATION - JUST OLD TOM EXPERIENCE */}
 
       {/* Magical Gesture Recognition */}
       <MagicalGestureRecognizer
