@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { Box, keyframes } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';

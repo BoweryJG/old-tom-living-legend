@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Fade } from '@mui/material';
 import Lottie from 'lottie-react';

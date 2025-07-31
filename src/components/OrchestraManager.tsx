@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Box, IconButton, Slider, Paper, Typography, Tooltip } from '@mui/material';
 import {

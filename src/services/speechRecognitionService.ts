@@ -24,7 +24,7 @@ interface SpeechResult {
 }
 
 type SpeechEventCallback = (result: SpeechResult) => void;
-type ErrorCallback = (error: SpeechRecognitionError) => void;
+type ErrorCallback = (error: Error) => void;
 
 class SpeechRecognitionService {
   private recognition: any = null;
@@ -343,7 +343,7 @@ class SpeechRecognitionService {
                         'Speech recognition error occurred.';
 
     this.errorListeners.forEach(callback => {
-      callback(new Error(errorMessage) as any);
+      callback(new Error(errorMessage));
     });
   }
 

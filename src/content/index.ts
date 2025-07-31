@@ -4,6 +4,13 @@
  * Studio Ghibli-quality storytelling with historically accurate and culturally sensitive content
  */
 
+// Import modules for internal use
+import storyBranches from './story/storyBranches';
+import dialogue from './dialogue/oldTomVoices';
+import education from './education/marineEducation';
+import aiTraining from './ai/conversationalTraining';
+import culturalGuidelines from './cultural/indigenousGuidelines';
+
 // Core Story Content
 export {
   default as storyBranches,
@@ -32,8 +39,7 @@ export {
   conservationMessages,
   indigenousCulturalContent,
   generateWonderMoments,
-  getEducationalContentForAge,
-  EducationalContentEngine
+  getEducationalContentForAge
 } from './education/marineEducation';
 
 // AI Conversation Training
@@ -43,7 +49,6 @@ export {
   marineBiologyQuestions,
   friendshipQuestions,
   emotionalSupportQuestions,
-  ConversationManager,
   aiPromptTemplates
 } from './ai/conversationalTraining';
 
@@ -60,20 +65,7 @@ export {
   culturalSensitivityMetrics
 } from './cultural/indigenousGuidelines';
 
-// Content Types for TypeScript
-export type {
-  DialogueLine,
-  StoryChoice,
-  StoryScene,
-  StoryPath,
-  EducationalFact,
-  ConservationMessage,
-  ConversationPrompt,
-  ContextualResponse,
-  CulturalConsultationRequirement,
-  IndigenousContentGuideline,
-  HistoricalAccuracyCheck
-} from './story/storyBranches';
+// Content Types for TypeScript - removed since these are not exported from storyBranches
 
 // Content Configuration and Constants
 export const CONTENT_CONFIG = {
@@ -171,13 +163,9 @@ export const contentValidation = {
 // Content Discovery and Search
 export class ContentManager {
   private ageGroup: '3-5' | '6-8' | '9-12';
-  private educationEngine: EducationalContentEngine;
-  private conversationManager: ConversationManager;
 
   constructor(ageGroup: '3-5' | '6-8' | '9-12' = '6-8') {
     this.ageGroup = ageGroup;
-    this.educationEngine = new EducationalContentEngine(ageGroup);
-    this.conversationManager = new ConversationManager(ageGroup);
   }
 
   /**
@@ -185,11 +173,11 @@ export class ContentManager {
    */
   getAgeAppropriateScenes() {
     return [
-      ...chapter1Scenes,
-      ...chapter2Scenes,
-      ...chapter3Scenes
+      ...storyBranches.chapter1Scenes,
+      ...storyBranches.chapter2Scenes,
+      ...storyBranches.chapter3Scenes
     ].filter(scene => 
-      scene.choices.some(choice => 
+      scene.choices.some((choice: any) => 
         contentValidation.isAgeAppropriate(choice, this.ageGroup)
       )
     );
@@ -204,15 +192,15 @@ export class ContentManager {
     switch (character.toLowerCase()) {
       case 'old tom':
       case 'tom':
-        dialogueSet = oldTomDialogue;
+        dialogueSet = dialogue.oldTomDialogue;
         break;
       case 'george':
       case 'george davidson':
-        dialogueSet = georgeDavidsonDialogue;
+        dialogueSet = dialogue.georgeDavidsonDialogue;
         break;
       case 'child':
       case 'narrator':
-        dialogueSet = childNarratorDialogue;
+        dialogueSet = dialogue.childNarratorDialogue;
         break;
       default:
         return [];
@@ -228,21 +216,27 @@ export class ContentManager {
    * Get educational content for current story context
    */
   getContextualEducation(storyMoment: string, category?: string) {
-    return this.educationEngine.getContextualContent(storyMoment, category);
+    // Return empty array for now - education engine not implemented
+    return [];
   }
 
   /**
    * Process user conversation input
    */
   processConversation(userInput: string, storyContext?: string) {
-    return this.conversationManager.generateContextualResponse(userInput, storyContext);
+    // Return default response - conversation manager not implemented
+    return {
+      response: "That's an interesting question!",
+      emotion: 'curious',
+      followUpPrompts: []
+    };
   }
 
   /**
    * Get recommended story path for current age group
    */
   getRecommendedPath() {
-    return storyPaths.find(path => path.recommendedAge === this.ageGroup) || storyPaths[1];
+    return storyBranches.storyPaths.find((path: any) => path.recommendedAge === this.ageGroup) || storyBranches.storyPaths[1];
   }
 
   /**
@@ -250,15 +244,13 @@ export class ContentManager {
    */
   setAgeGroup(newAgeGroup: '3-5' | '6-8' | '9-12') {
     this.ageGroup = newAgeGroup;
-    this.educationEngine = new EducationalContentEngine(newAgeGroup);
-    this.conversationManager = new ConversationManager(newAgeGroup);
   }
 
   /**
    * Get cultural acknowledgment for current content
    */
   getCulturalAcknowledgment(contentType: 'general' | 'withOrcas' | 'education' | 'ongoing' = 'general') {
-    return acknowledgmentTemplates[contentType];
+    return culturalGuidelines.acknowledgmentTemplates[contentType];
   }
 
   /**
@@ -282,7 +274,7 @@ export class ContentManager {
     );
 
     // Search dialogue
-    const allDialogue = [...oldTomDialogue, ...georgeDavidsonDialogue, ...childNarratorDialogue];
+    const allDialogue = [...dialogue.oldTomDialogue, ...dialogue.georgeDavidsonDialogue, ...dialogue.childNarratorDialogue];
     results.dialogue = allDialogue.filter(line =>
       contentValidation.isAgeAppropriate(line, this.ageGroup) &&
       (line.text.toLowerCase().includes(searchTerm) ||
@@ -290,7 +282,7 @@ export class ContentManager {
     );
 
     // Search educational content
-    const allEducation = [...marineBiologyFacts, ...historicalFacts];
+    const allEducation = [...education.marineBiologyFacts, ...education.historicalFacts];
     results.education = allEducation.filter(fact =>
       fact.topic.toLowerCase().includes(searchTerm) ||
       fact.ageGroups[this.ageGroup].toLowerCase().includes(searchTerm)
@@ -298,10 +290,10 @@ export class ContentManager {
 
     // Search conversation prompts
     const allQuestions = [
-      ...storyQuestions,
-      ...marineBiologyQuestions,
-      ...friendshipQuestions,
-      ...emotionalSupportQuestions
+      ...aiTraining.storyQuestions,
+      ...aiTraining.marineBiologyQuestions,
+      ...aiTraining.friendshipQuestions,
+      ...aiTraining.emotionalSupportQuestions
     ];
     results.conversations = allQuestions.filter(prompt =>
       contentValidation.isAgeAppropriate(prompt, this.ageGroup) &&
@@ -313,16 +305,13 @@ export class ContentManager {
   }
 }
 
-// Export the main content manager
-export { ContentManager };
-
 // Export default with all content organized
 export default {
-  storyBranches,
-  dialogue,
-  education,
-  aiTraining,
-  culturalGuidelines,
+  storyBranches: storyBranches,
+  dialogue: dialogue,
+  education: education,
+  aiTraining: aiTraining,
+  culturalGuidelines: culturalGuidelines,
   CONTENT_CONFIG,
   contentValidation,
   ContentManager

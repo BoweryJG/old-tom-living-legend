@@ -164,7 +164,7 @@ export class AudioAccessibilityService {
     if ('getGamepads' in navigator) {
       const gamepads = navigator.getGamepads();
       for (const gamepad of gamepads) {
-        if (gamepad && gamepad.vibrationActuator) {
+        if (gamepad && (gamepad as any).vibrationActuator) {
           this.hapticDevice = gamepad;
           console.log('Haptic device detected:', gamepad.id);
           break;

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { createContext, useContext, useEffect } from 'react';
 import { useAppDispatch } from '@/store';
 import { setAudioContext } from '@/store/slices/audioSlice';

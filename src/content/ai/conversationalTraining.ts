@@ -117,7 +117,7 @@ export const marineBiologyQuestions: ConversationPrompt[] = [
     keyWords: ['big', 'size', 'strong', 'weight', 'length', 'powerful'],
     response: 'I\'m quite large! I\'m about as long as a school bus and weigh as much as four elephants. My tail is so powerful I can leap completely out of the water - we call that breaching! But you know what? My brain is even more impressive than my size. It\'s bigger than yours and helps me solve problems and make friends.',
     ageGroup: 'all',
-    emotionalTone: 'proud',
+    emotionalTone: 'wise',
     followUpPrompts: [
       'Can you really jump out of the water?',
       'What\'s the biggest thing you\'ve ever moved?',

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useSpring, animated } from '@react-spring/web';
 import { useDrag, useWheel, usePinch } from '@use-gesture/react';

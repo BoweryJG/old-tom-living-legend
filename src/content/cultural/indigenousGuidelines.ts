@@ -176,7 +176,7 @@ export const historicalSources: HistoricalAccuracyCheck[] = [
     verification: 'Requires consultation with appropriate knowledge holders',
     dateRange: 'Pre-contact to present',
     reliability: 'high',
-    culturalSensitivity: 'required'
+    culturalSensitivity: 'needs_review'
   },
   {
     source: 'Academic Research on Human-Orca Interactions',

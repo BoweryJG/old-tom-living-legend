@@ -769,7 +769,13 @@ class EmotionalAIService {
   }
 
   public updateSafetyThresholds(thresholds: Partial<Record<string, number>>): void {
-    this.safetyThresholds = { ...this.safetyThresholds, ...thresholds };
+    const filteredThresholds: Record<string, number> = {};
+    Object.entries(thresholds).forEach(([key, value]) => {
+      if (value !== undefined) {
+        filteredThresholds[key] = value;
+      }
+    });
+    this.safetyThresholds = { ...this.safetyThresholds, ...filteredThresholds };
   }
 
   private determineTimeOfDay(): 'morning' | 'afternoon' | 'evening' {

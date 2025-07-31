@@ -87,7 +87,7 @@ export class AudioPerformanceOptimizer {
     const getProcessingPower = (): DeviceCapabilities['processingPower'] => {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-      const renderer = gl ? gl.getParameter(gl.RENDERER) : '';
+      const renderer = gl && 'getParameter' in gl ? (gl as WebGLRenderingContext).getParameter((gl as WebGLRenderingContext).RENDERER) : '';
       
       // Basic heuristics for processing power
       if (navigator.hardwareConcurrency >= 8) return 'ultra';

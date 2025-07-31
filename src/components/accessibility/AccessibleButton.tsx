@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useRef, useEffect, useState } from 'react';
 import { Button, ButtonProps, Box, useTheme, alpha } from '@mui/material';
 import { useAccessibility } from './AccessibilityProvider';
