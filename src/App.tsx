@@ -20,6 +20,8 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { AccessibilityProvider } from './components/accessibility/AccessibilityProvider';
 import LoadingScreen from './components/ui/LoadingScreen';
 import { higgsAudioService } from './services/higgsAudioService';
+import ChapterVisuals from './components/ChapterVisuals';
+import AmbientSounds from './components/AmbientSounds';
 
 // Story chapters
 const storyChapters = [
@@ -291,14 +293,34 @@ const App: React.FC = () => {
             sx={{
               position: 'relative',
               minHeight: '100vh',
-              background: 'linear-gradient(180deg, #0a1a2e 0%, #1a3a4e 50%, #0a2a3e 100%)',
+              background: currentChapter === 0 
+                ? 'linear-gradient(180deg, #0a1a2e 0%, #1a3a4e 50%, #0a2a3e 100%)'
+                : currentChapter === 4 
+                ? 'linear-gradient(180deg, #1a1a1a 0%, #2c2c2c 50%, #1a2a3a 100%)' // Stormy
+                : currentChapter === 5
+                ? 'linear-gradient(180deg, #1a2a3e 0%, #3a2a1e 50%, #2a1a0e 100%)' // Sunset
+                : currentChapter === 6
+                ? 'linear-gradient(180deg, #2a3a4e 0%, #3a4a5e 50%, #4a5a6e 100%)' // Museum day
+                : 'linear-gradient(180deg, #0a1a2e 0%, #1a3a4e 50%, #0a2a3e 100%)', // Default ocean
+              transition: 'background 2s ease-in-out',
               overflow: 'hidden',
             }}
           >
             {/* Ocean Background */}
             <Box sx={{ position: 'absolute', inset: 0, zIndex: 1 }}>
-              <OceanParticles intensity={currentChapter === 0 ? "low" : "medium"} />
+              <OceanParticles 
+                intensity={currentChapter === 0 ? "low" : currentChapter === 4 ? "high" : "medium"} 
+                mood={currentMood}
+              />
             </Box>
+
+            {/* Chapter-specific visuals */}
+            {currentChapter > 0 && (
+              <ChapterVisuals 
+                chapter={currentChapter} 
+                mood={currentMood}
+              />
+            )}
 
             {/* Landing Page */}
             {currentChapter === 0 && (
@@ -648,6 +670,12 @@ const App: React.FC = () => {
               isPlaying={currentChapter > 0}
               volume={0.15}
               onMoodChange={setCurrentMood}
+            />
+
+            {/* Ambient Ocean Sounds */}
+            <AmbientSounds 
+              chapter={currentChapter}
+              isPlaying={currentChapter > 0}
             />
           </Box>
         </ThemeProvider>
