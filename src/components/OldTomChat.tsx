@@ -22,6 +22,7 @@ import {
   VolumeUp as VolumeUpIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
+import { higgsAudioService } from '../services/higgsAudioService';
 
 interface ChatMessage {
   id: string;
@@ -55,64 +56,51 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Browser TTS for Old Tom's voice
-  const speakAsOldTom = (text: string) => {
-    if (!('speechSynthesis' in window)) {
-      console.error('Browser does not support speech synthesis');
-      return;
-    }
-
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
+  // Play whale sounds instead of terrible TTS
+  const playWhaleSound = () => {
     setIsSpeaking(true);
-
-    const utterance = new SpeechSynthesisUtterance(text);
     
-    // Load available voices
-    const voices = window.speechSynthesis.getVoices();
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     
-    // Find Australian or deep male voice for Old Tom
-    let oldTomVoice = voices.find(voice => 
-      voice.lang.includes('en-AU') || 
-      voice.name.toLowerCase().includes('australian')
-    ) || voices.find(voice => 
-      voice.name.toLowerCase().includes('daniel') ||
-      voice.name.toLowerCase().includes('david') ||
-      voice.name.toLowerCase().includes('male')
-    );
+    // Create multiple oscillators for richer whale sound
+    const oscillator1 = audioContext.createOscillator();
+    const oscillator2 = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    const filter = audioContext.createBiquadFilter();
     
-    if (oldTomVoice) {
-      utterance.voice = oldTomVoice;
-    }
+    // Connect audio nodes
+    oscillator1.connect(filter);
+    oscillator2.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioContext.destination);
     
-    // Configure for 80-year-old sea captain
-    utterance.pitch = 0.5;  // Deep, weathered voice
-    utterance.rate = 0.7;   // Slow, deliberate speech
-    utterance.volume = 0.9;
-
-    utterance.onend = () => {
-      setIsSpeaking(false);
-    };
-
-    utterance.onerror = () => {
-      setIsSpeaking(false);
-    };
-
-    window.speechSynthesis.speak(utterance);
+    // Configure filter for underwater effect
+    filter.type = 'lowpass';
+    filter.frequency.value = 500;
+    filter.Q.value = 10;
+    
+    // Whale song frequencies
+    oscillator1.frequency.setValueAtTime(150, audioContext.currentTime);
+    oscillator1.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.5);
+    oscillator1.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 1.5);
+    
+    oscillator2.frequency.setValueAtTime(75, audioContext.currentTime);
+    oscillator2.frequency.exponentialRampToValueAtTime(90, audioContext.currentTime + 0.7);
+    oscillator2.frequency.exponentialRampToValueAtTime(60, audioContext.currentTime + 1.5);
+    
+    // Volume envelope
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.1);
+    gainNode.gain.exponentialRampToValueAtTime(0.05, audioContext.currentTime + 1.4);
+    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 1.5);
+    
+    oscillator1.start(audioContext.currentTime);
+    oscillator2.start(audioContext.currentTime);
+    oscillator1.stop(audioContext.currentTime + 1.5);
+    oscillator2.stop(audioContext.currentTime + 1.5);
+    
+    setTimeout(() => setIsSpeaking(false), 1500);
   };
-
-  // Load voices on mount
-  useEffect(() => {
-    if ('speechSynthesis' in window) {
-      // Load voices
-      window.speechSynthesis.getVoices();
-      
-      // Chrome needs this event listener
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-      };
-    }
-  }, []);
 
   const generateOldTomResponse = async (userMessage: string): Promise<string> => {
     // Simulate Old Tom's responses based on user input
@@ -190,12 +178,35 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
   const handlePlayMessage = async (message: ChatMessage) => {
     if (message.sender !== 'oldtom' || isSpeaking) return;
     
-    // Use browser TTS to speak the message
-    speakAsOldTom(message.text);
-    
+    setIsSpeaking(true);
     setMessages(prev => prev.map(msg => 
       msg.id === message.id ? { ...msg, isPlaying: true } : { ...msg, isPlaying: false }
     ));
+    
+    try {
+      // Try to use Hugging Face API first
+      const audioUrl = await higgsAudioService.generateOldTomVoice(message.text);
+      
+      if (audioUrl) {
+        const audio = new Audio(audioUrl);
+        audio.onended = () => {
+          setIsSpeaking(false);
+          setMessages(prev => prev.map(msg => ({ ...msg, isPlaying: false })));
+        };
+        audio.onerror = () => {
+          // Fallback to whale sound if API fails
+          playWhaleSound();
+        };
+        await audio.play();
+      } else {
+        // Fallback to whale sound
+        playWhaleSound();
+      }
+    } catch (error) {
+      console.error('Error playing message:', error);
+      // Fallback to whale sound
+      playWhaleSound();
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

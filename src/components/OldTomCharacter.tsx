@@ -132,46 +132,61 @@ const OldTomCharacter: React.FC<OldTomCharacterProps> = ({
                   🐋
                 </Typography>
 
-                {/* Speaking indicator */}
+                {/* Speaking bubble with wave animation */}
                 {currentAnimation === 'speaking' && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0 }}
+                    initial={{ opacity: 0, scale: 0, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0, y: 20 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
                     style={{
                       position: 'absolute',
-                      top: '20%',
-                      right: '-20%',
+                      top: '-40%',
+                      right: '-30%',
                     }}
                   >
                     <Box
                       sx={{
-                        display: 'flex',
-                        gap: 0.5,
+                        position: 'relative',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '20px',
+                        padding: '10px 15px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                        '&::after': {
+                          content: '""',
+                          position: 'absolute',
+                          bottom: '-10px',
+                          left: '20%',
+                          width: 0,
+                          height: 0,
+                          borderLeft: '10px solid transparent',
+                          borderRight: '10px solid transparent',
+                          borderTop: '10px solid #FFFFFF',
+                        }
                       }}
                     >
-                      {[0, 1, 2].map((i) => (
-                        <motion.div
-                          key={i}
-                          animate={{
-                            y: [0, -5, 0],
-                          }}
-                          transition={{
-                            duration: 0.6,
-                            repeat: Infinity,
-                            delay: i * 0.2,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        {[0, 1, 2].map((i) => (
+                          <motion.div
+                            key={i}
+                            animate={{
+                              scaleY: [1, 1.5, 1],
+                            }}
+                            transition={{
+                              duration: 0.6,
+                              repeat: Infinity,
+                              delay: i * 0.2,
+                            }}
+                            style={{
+                              width: 3,
+                              height: 12,
                               backgroundColor: '#4FC3F7',
+                              borderRadius: 10,
+                              transformOrigin: 'bottom',
                             }}
                           />
-                        </motion.div>
-                      ))}
+                        ))}
+                      </Box>
                     </Box>
                   </motion.div>
                 )}
