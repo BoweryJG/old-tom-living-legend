@@ -2,6 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Box, keyframes } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Map generated images to appropriate chapters
+const chapterImages = {
+  1: null, // Could use a mysterious ocean image
+  2: null, // Partnership image
+  3: '/images/generated/2025-07-21_FLUX_1-schnell-infer_Image_2744d.webp', // The pirate could represent a whaler
+  4: null, // Storm image
+  5: null, // Sunset image  
+  6: null, // Museum image
+};
+
 interface ChapterVisualsProps {
   chapter: number;
   mood: 'peaceful' | 'mysterious' | 'adventurous' | 'nostalgic' | 'dramatic';

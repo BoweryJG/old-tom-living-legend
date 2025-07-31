@@ -21,8 +21,11 @@ import {
   Close as CloseIcon,
   VolumeUp as VolumeUpIcon,
   Person as PersonIcon,
+  Mic as MicIcon,
+  MicOff as MicOffIcon,
 } from '@mui/icons-material';
 import { higgsAudioService } from '../services/higgsAudioService';
+import { speechRecognitionService } from '../services/speechRecognitionService';
 
 interface ChatMessage {
   id: string;
@@ -49,6 +52,9 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -56,50 +62,139 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Play whale sounds instead of terrible TTS
-  const playWhaleSound = () => {
+  // Set up speech recognition listeners
+  useEffect(() => {
+    const handleResult = (result: any) => {
+      if (result.isFinal) {
+        const newText = (inputText + ' ' + result.transcript).trim();
+        setInputText(newText);
+        setInterimTranscript('');
+        
+        // Auto-send after a short delay when voice input is complete
+        if (newText && isListening) {
+          setTimeout(() => {
+            // Will trigger send via useEffect
+            setIsListening(false);
+            speechRecognitionService.stopListening();
+          }, 1000); // 1 second delay to allow for corrections
+        }
+      } else {
+        setInterimTranscript(result.transcript);
+      }
+    };
+
+    const handleError = (error: Error) => {
+      console.error('Speech recognition error:', error);
+      setIsListening(false);
+      setInterimTranscript('');
+    };
+
+    const handleEnd = () => {
+      setIsListening(false);
+      setInterimTranscript('');
+    };
+
+    speechRecognitionService.addListener('result', handleResult);
+    speechRecognitionService.addListener('interim', handleResult);
+    speechRecognitionService.addListener('end', handleEnd);
+    speechRecognitionService.addErrorListener(handleError);
+    speechRecognitionService.setContext('chat');
+
+    return () => {
+      speechRecognitionService.removeListener('result', handleResult);
+      speechRecognitionService.removeListener('interim', handleResult);
+      speechRecognitionService.removeListener('end', handleEnd);
+      speechRecognitionService.removeErrorListener(handleError);
+    };
+  }, [inputText, isListening]);
+
+  // Auto-send when voice input stops and there's text
+  useEffect(() => {
+    if (!isListening && inputText.trim() && interimTranscript === '') {
+      // Check if we just stopped listening (voice input ended)
+      const wasListening = speechRecognitionService.getIsListening();
+      if (!wasListening && inputText.trim()) {
+        // Small delay to ensure smooth transition
+        const timer = setTimeout(() => {
+          if (inputText.trim() && !isLoading) {
+            handleSendMessage();
+          }
+        }, 500);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isListening]);
+
+  // Play Old Tom's voice using Higgs Audio
+  const playOldTomVoice = async (text: string) => {
     setIsSpeaking(true);
+    setIsGeneratingAudio(true);
     
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    try {
+      // Generate audio using Higgs Audio service
+      const audioUrl = await higgsAudioService.generateOldTomVoice(text);
+      setIsGeneratingAudio(false);
+      
+      if (audioUrl) {
+        // Create and play the audio
+        const audio = new Audio(audioUrl);
+        
+        audio.onended = () => {
+          setIsSpeaking(false);
+        };
+        
+        audio.onerror = () => {
+          console.error('Failed to play audio');
+          setIsSpeaking(false);
+          // Fallback to browser TTS
+          playBrowserTTS(text);
+        };
+        
+        await audio.play();
+      } else {
+        // Fallback to browser TTS if Higgs Audio fails
+        playBrowserTTS(text);
+      }
+    } catch (error) {
+      console.error('Error playing Old Tom voice:', error);
+      setIsGeneratingAudio(false);
+      setIsSpeaking(false);
+      // Fallback to browser TTS
+      playBrowserTTS(text);
+    }
+  };
+
+  // Fallback browser TTS
+  const playBrowserTTS = (text: string) => {
+    if (!('speechSynthesis' in window)) {
+      console.error('Browser does not support speech synthesis');
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
     
-    // Create multiple oscillators for richer whale sound
-    const oscillator1 = audioContext.createOscillator();
-    const oscillator2 = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    const filter = audioContext.createBiquadFilter();
+    // Configure for Old Tom's voice
+    const voices = window.speechSynthesis.getVoices();
+    const australianVoice = voices.find(voice => 
+      voice.lang.includes('en-AU') || 
+      voice.name.toLowerCase().includes('australian')
+    );
     
-    // Connect audio nodes
-    oscillator1.connect(filter);
-    oscillator2.connect(filter);
-    filter.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+    if (australianVoice) {
+      utterance.voice = australianVoice;
+    }
     
-    // Configure filter for underwater effect
-    filter.type = 'lowpass';
-    filter.frequency.value = 500;
-    filter.Q.value = 10;
+    utterance.pitch = 0.5;  // Deep voice
+    utterance.rate = 0.6;   // Slow, elderly speech
+    utterance.volume = 0.8;
     
-    // Whale song frequencies
-    oscillator1.frequency.setValueAtTime(150, audioContext.currentTime);
-    oscillator1.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.5);
-    oscillator1.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 1.5);
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
     
-    oscillator2.frequency.setValueAtTime(75, audioContext.currentTime);
-    oscillator2.frequency.exponentialRampToValueAtTime(90, audioContext.currentTime + 0.7);
-    oscillator2.frequency.exponentialRampToValueAtTime(60, audioContext.currentTime + 1.5);
-    
-    // Volume envelope
-    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.1);
-    gainNode.gain.exponentialRampToValueAtTime(0.05, audioContext.currentTime + 1.4);
-    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 1.5);
-    
-    oscillator1.start(audioContext.currentTime);
-    oscillator2.start(audioContext.currentTime);
-    oscillator1.stop(audioContext.currentTime + 1.5);
-    oscillator2.stop(audioContext.currentTime + 1.5);
-    
-    setTimeout(() => setIsSpeaking(false), 1500);
+    window.speechSynthesis.speak(utterance);
   };
 
   const generateOldTomResponse = async (userMessage: string): Promise<string> => {
@@ -178,41 +273,36 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
   const handlePlayMessage = async (message: ChatMessage) => {
     if (message.sender !== 'oldtom' || isSpeaking) return;
     
-    setIsSpeaking(true);
     setMessages(prev => prev.map(msg => 
       msg.id === message.id ? { ...msg, isPlaying: true } : { ...msg, isPlaying: false }
     ));
     
-    try {
-      // Try to use Hugging Face API first
-      const audioUrl = await higgsAudioService.generateOldTomVoice(message.text);
-      
-      if (audioUrl) {
-        const audio = new Audio(audioUrl);
-        audio.onended = () => {
-          setIsSpeaking(false);
-          setMessages(prev => prev.map(msg => ({ ...msg, isPlaying: false })));
-        };
-        audio.onerror = () => {
-          // Fallback to whale sound if API fails
-          playWhaleSound();
-        };
-        await audio.play();
-      } else {
-        // Fallback to whale sound
-        playWhaleSound();
-      }
-    } catch (error) {
-      console.error('Error playing message:', error);
-      // Fallback to whale sound
-      playWhaleSound();
-    }
+    // Use the new playOldTomVoice function which handles Higgs Audio and fallbacks
+    await playOldTomVoice(message.text);
+    
+    setMessages(prev => prev.map(msg => ({ ...msg, isPlaying: false })));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const toggleVoiceInput = async () => {
+    if (isListening) {
+      speechRecognitionService.stopListening();
+      setIsListening(false);
+      setInterimTranscript('');
+    } else {
+      try {
+        await speechRecognitionService.startListening();
+        setIsListening(true);
+      } catch (error) {
+        console.error('Failed to start voice input:', error);
+        alert('Please allow microphone access to use voice input.');
+      }
     }
   };
 
@@ -355,7 +445,7 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
                       <IconButton
                         size="small"
                         onClick={() => handlePlayMessage(message)}
-                        disabled={isSpeaking}
+                        disabled={isSpeaking || isGeneratingAudio}
                         sx={{
                           position: 'absolute',
                           bottom: 4,
@@ -364,7 +454,11 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
                           '&:hover': { color: '#D4AF37' }
                         }}
                       >
-                        {message.isPlaying ? <CircularProgress size={16} color="inherit" /> : <VolumeUpIcon fontSize="small" />}
+                        {(message.isPlaying || (isGeneratingAudio && message.isPlaying !== false)) ? (
+                          <CircularProgress size={16} color="inherit" />
+                        ) : (
+                          <VolumeUpIcon fontSize="small" />
+                        )}
                       </IconButton>
                     )}
                   </Paper>
@@ -397,17 +491,37 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
             p: 2,
             borderTop: '2px solid rgba(212, 175, 55, 0.3)',
             background: 'rgba(15, 52, 96, 0.3)',
+            position: 'relative',
           }}
         >
+          {/* Listening indicator */}
+          {isListening && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: -2,
+                left: 0,
+                right: 0,
+                height: 2,
+                background: 'linear-gradient(90deg, #f44336 0%, #e91e63 50%, #f44336 100%)',
+                backgroundSize: '200% 100%',
+                animation: 'pulse 1.5s ease-in-out infinite',
+                '@keyframes pulse': {
+                  '0%': { backgroundPosition: '200% 0' },
+                  '100%': { backgroundPosition: '-200% 0' },
+                },
+              }}
+            />
+          )}
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
             <TextField
               fullWidth
               multiline
               maxRows={3}
-              value={inputText}
+              value={inputText + (interimTranscript ? ' ' + interimTranscript : '')}
               onChange={(e) => setInputText(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask Old Tom about his adventures..."
+              placeholder={isListening ? "Listening..." : "Ask Old Tom about his adventures..."}
               disabled={isLoading}
               sx={{
                 '& .MuiOutlinedInput-root': {
@@ -428,6 +542,23 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
                 },
               }}
             />
+            <Fab
+              size="small"
+              onClick={toggleVoiceInput}
+              sx={{
+                background: isListening 
+                  ? 'linear-gradient(45deg, #f44336 30%, #e91e63 90%)'
+                  : 'linear-gradient(45deg, #8B7355 30%, #A0826D 90%)',
+                '&:hover': {
+                  background: isListening
+                    ? 'linear-gradient(45deg, #e91e63 30%, #f44336 90%)'
+                    : 'linear-gradient(45deg, #A0826D 30%, #8B7355 90%)',
+                },
+                mr: 1,
+              }}
+            >
+              {isListening ? <MicOffIcon /> : <MicIcon />}
+            </Fab>
             <Fab
               size="small"
               onClick={handleSendMessage}

@@ -2,7 +2,6 @@ import { openaiService } from './openaiService';
 import { characterPersonalityService, CharacterPersonality } from './characterPersonalityService';
 import { conversationMemoryService } from './conversationMemoryService';
 import { emotionalAIService } from './emotionalAIService';
-import { elevenlabsService } from './elevenlabsService';
 
 interface AskOldTomRequest {
   question: string;
@@ -577,21 +576,8 @@ class AskOldTomService {
     emotion: string,
     ageGroup: string
   ): Promise<string> {
-    try {
-      return await elevenlabsService.generateContextualSpeech(
-        textResponse,
-        {
-          character: 'old-tom',
-          emotion: emotion,
-          situation: 'educational',
-          childAge: ageGroup === '3-5' ? 4 : ageGroup === '6-8' ? 7 : 10,
-          urgency: 'low'
-        }
-      );
-    } catch (error) {
-      console.error('Error generating audio response:', error);
-      return '';
-    }
+    // Audio generation removed - now handled by Higgs Audio in the UI
+    return '';
   }
 
   private async updateConversationMemory(

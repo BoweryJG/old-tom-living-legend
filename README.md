@@ -16,7 +16,7 @@ This application brings that incredible true story to life through interactive A
 ## ✨ Features
 
 ### 🎭 AI-Powered Conversations
-- **Talk with Old Tom**: Click to hear his deep, wise voice powered by ElevenLabs
+- **Talk with Old Tom**: Click to hear his deep, wise voice powered by Higgs Audio
 - **Interactive Chat**: Full conversation system with contextual responses about the Davidson partnership
 - **Voice Responses**: Every message from Old Tom can be heard with authentic whale vocalizations
 - **Educational Content**: Learn about maritime history through engaging storytelling
@@ -61,7 +61,7 @@ This application brings that incredible true story to life through interactive A
 
 ### AI & Voice
 - **OpenAI API** for character conversations and story generation
-- **ElevenLabs API** for text-to-speech and character voices
+- **Higgs Audio (Hugging Face)** for text-to-speech and character voices
 - **Web Speech API** for voice recognition
 
 ### Performance & PWA
@@ -76,7 +76,6 @@ This application brings that incredible true story to life through interactive A
 - Node.js 16+ 
 - npm or yarn
 - OpenAI API key
-- ElevenLabs API key
 
 ### Installation
 
@@ -99,7 +98,6 @@ cp .env.example .env.local
 Add your API keys to `.env.local`:
 ```
 REACT_APP_OPENAI_API_KEY=your_openai_key_here
-REACT_APP_ELEVENLABS_API_KEY=your_elevenlabs_key_here
 ```
 
 4. Start the development server
@@ -149,7 +147,7 @@ src/
 │   ├── OceanParticles.tsx     # 3D ocean environment with marine particles
 │   └── OrchestraManager.tsx   # Music system and atmospheric mood control
 ├── services/
-│   └── elevenLabsTTS.ts       # Voice synthesis service with character profiles
+│   └── higgsAudioService.ts   # Voice synthesis service with character profiles
 ├── App.tsx                    # Main application with theme and routing
 └── index.tsx                  # Application entry point
 ```
@@ -222,7 +220,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Studio Ghibli for artistic inspiration
 - The React and open-source community
-- OpenAI and ElevenLabs for AI capabilities
+- OpenAI and Higgs Audio for AI capabilities
 - All contributors and beta testers
 
 ---

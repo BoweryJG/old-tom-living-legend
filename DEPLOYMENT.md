@@ -65,7 +65,6 @@ firebase deploy
 
 Required for production:
 - `REACT_APP_OPENAI_API_KEY` - OpenAI API key for character AI
-- `REACT_APP_ELEVENLABS_API_KEY` - ElevenLabs API key for voice synthesis
 
 Optional:
 - `REACT_APP_OPENAI_BASE_URL` - Custom OpenAI endpoint

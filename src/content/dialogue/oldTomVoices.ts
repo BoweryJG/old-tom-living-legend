@@ -324,10 +324,10 @@ export const childNarratorDialogue: DialogueLine[] = [
   }
 ];
 
-// VOICE SYNTHESIS CONFIGURATIONS FOR ELEVENLABS
+// VOICE SYNTHESIS CONFIGURATIONS
 export const voiceConfigurations = {
   oldTom: {
-    voiceId: 'old_tom_custom', // Would be configured in ElevenLabs
+    voiceId: 'old_tom_custom',
     stability: 0.75,
     similarityBoost: 0.85,
     style: 0.20, // Wise, gentle, deep

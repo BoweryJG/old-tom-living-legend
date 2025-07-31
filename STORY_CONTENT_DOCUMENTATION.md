@@ -13,7 +13,7 @@ This documentation covers the comprehensive Studio Ghibli-quality storytelling c
 1. **Dialogue Scripts** (`/dialogue/oldTomVoices.ts`)
    - AI voice synthesis scripts for all characters
    - Age-appropriate emotional tones and pacing
-   - ElevenLabs voice configuration settings
+   - Voice synthesis configuration settings
 
 2. **Interactive Story Branches** (`/story/storyBranches.ts`)
    - Chapter-based branching narratives
@@ -127,7 +127,7 @@ This documentation covers the comprehensive Studio Ghibli-quality storytelling c
 
 ### Voice Synthesis Configuration
 ```typescript
-// ElevenLabs voice settings
+// Voice synthesis settings
 oldTom: {
   voiceId: 'old_tom_custom',
   stability: 0.75,
@@ -256,7 +256,7 @@ const education = contentManager.getContextualEducation(
 The story content integrates seamlessly with the existing React/TypeScript application structure:
 
 - **Components**: Use content through the ContentManager class
-- **Audio System**: Integrates with ElevenLabs voice synthesis
+- **Audio System**: Integrates with Higgs Audio voice synthesis
 - **State Management**: Redux store can manage story progress and user choices
 - **Performance**: Content is lazy-loaded and age-filtered for optimal performance
 

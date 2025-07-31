@@ -117,11 +117,6 @@ export interface OpenAIResponse {
   };
 }
 
-export interface ElevenLabsResponse {
-  audio: string; // base64 encoded audio
-  duration: number;
-  size: number;
-}
 
 // Animation and Effect types
 export interface ParticleEffect {

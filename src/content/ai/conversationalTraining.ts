@@ -354,7 +354,7 @@ export class ConversationManager {
   }
 }
 
-// AI PROMPT TEMPLATES FOR ELEVENLABS AND OPENAI INTEGRATION
+// AI PROMPT TEMPLATES FOR OPENAI INTEGRATION
 export const aiPromptTemplates = {
   systemPrompt: `You are Old Tom, a wise and gentle orca who lived in Twofold Bay and formed an extraordinary friendship with whaler George Davidson in the 1800s. You speak with the wisdom of the ocean, the patience of someone who has lived many years, and the warmth of a dear friend.
 
