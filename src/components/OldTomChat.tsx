@@ -22,8 +22,6 @@ import {
   VolumeUp as VolumeUpIcon,
   Person as PersonIcon,
 } from '@mui/icons-material';
-import { ElevenLabsTTSService } from '../services/elevenLabsTTS';
-import { openaiService } from '../services/openaiService';
 
 interface ChatMessage {
   id: string;
@@ -51,59 +49,95 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const oldTomVoice = useRef(new ElevenLabsTTSService());
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Initialize Old Tom's voice on first load
-  useEffect(() => {
-    if (open) {
-      oldTomVoice.current.initialize().catch(console.error);
+  // Browser TTS for Old Tom's voice
+  const speakAsOldTom = (text: string) => {
+    if (!('speechSynthesis' in window)) {
+      console.error('Browser does not support speech synthesis');
+      return;
     }
-  }, [open]);
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    setIsSpeaking(true);
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Load available voices
+    const voices = window.speechSynthesis.getVoices();
+    
+    // Find Australian or deep male voice for Old Tom
+    let oldTomVoice = voices.find(voice => 
+      voice.lang.includes('en-AU') || 
+      voice.name.toLowerCase().includes('australian')
+    ) || voices.find(voice => 
+      voice.name.toLowerCase().includes('daniel') ||
+      voice.name.toLowerCase().includes('david') ||
+      voice.name.toLowerCase().includes('male')
+    );
+    
+    if (oldTomVoice) {
+      utterance.voice = oldTomVoice;
+    }
+    
+    // Configure for 80-year-old sea captain
+    utterance.pitch = 0.5;  // Deep, weathered voice
+    utterance.rate = 0.7;   // Slow, deliberate speech
+    utterance.volume = 0.9;
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+    };
+
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Load voices on mount
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      // Load voices
+      window.speechSynthesis.getVoices();
+      
+      // Chrome needs this event listener
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }, []);
 
   const generateOldTomResponse = async (userMessage: string): Promise<string> => {
-    try {
-      // Use real OpenAI API with Old Tom's character
-      const response = await openaiService.generateCharacterResponse(
-        'Old Tom', 
-        userMessage,
-        {
-          characterPersonality: [
-            'wise 80-year-old orca',
-            'Australian sea captain personality',
-            'gentle but experienced',
-            'storyteller',
-            'protective of children',
-            'nostalgic about Davidson family partnership'
-          ],
-          memories: [
-            'Worked with Davidson whalers for 30+ years in Eden Bay',
-            'Led whaling expeditions using tail signals',
-            'Protected ships during storms',
-            'Shared feast of whale tongues and lips with humans',
-            'Lived from 1895-1930 in Twofold Bay'
-          ],
-          conversationHistory: messages
-            .slice(-5)
-            .filter(m => m && m.sender && m.text)
-            .map(m => ({
-              role: m.sender === 'user' ? 'user' : 'assistant',
-              content: m.text
-            })),
-          currentMood: 'wise and welcoming',
-          backstory: 'Old Tom was a legendary orca who formed an unprecedented partnership with the Davidson family whalers in Eden, Australia. For over 30 years, he led his pod in cooperative whale hunting, using sophisticated communication to guide human boats to prey. This true story represents one of history\'s most remarkable examples of interspecies cooperation.'
-        }
-      );
-      
-      return response;
-    } catch (error) {
-      console.error('OpenAI API Error:', error);
-      // Fallback to an authentic Old Tom response if API fails
-      return `G'day there, young navigator! *speaks in weathered Australian accent* The ocean currents are a bit choppy today, making it hard for this old whale to share his tales properly. But don't you worry - Old Tom has weathered many storms in these waters of Eden Bay. Would you like to hear about the time we helped the Davidson lads bring in a massive blue whale?`;
+    // Simulate Old Tom's responses based on user input
+    const lowercaseMessage = userMessage.toLowerCase();
+    
+    // Check for specific topics and respond accordingly
+    if (lowercaseMessage.includes('davidson') || lowercaseMessage.includes('family')) {
+      return "Ah, the Davidsons! *chuckles deeply* Fine folk they were, young sailor. Three generations of 'em I worked with - from old George Davidson right down to his grandsons. We had what they called the 'Law of the Tongue' - they'd get the meat, and we'd feast on the tongue and lips. Fair deal it was, lasted near on 40 years!";
+    } else if (lowercaseMessage.includes('hunt') || lowercaseMessage.includes('whale')) {
+      return "The great hunts, eh? *tail slaps the water* I'd spot the humpbacks from miles away, then swim to shore and thrash my tail - WHACK! WHACK! WHACK! The Davidson boys would hear it and know Old Tom had found prey. Then my pod and I would herd the whale into Twofold Bay, like shepherds of the sea we were!";
+    } else if (lowercaseMessage.includes('storm') || lowercaseMessage.includes('danger')) {
+      return "Storms? *voice grows serious* Aye, I've seen the ocean in all her moods. Once, young Jackie Davidson's boat capsized in a gale. I swam beneath him for hours, keeping him afloat until help arrived. The sea can be cruel, but we orcas never forgot our human partners.";
+    } else if (lowercaseMessage.includes('age') || lowercaseMessage.includes('old') || lowercaseMessage.includes('years')) {
+      return "How old am I? *laughs heartily* Well now, I've been swimming these waters since before your grandfather's grandfather was born! The museum folks reckon I lived from 1895 to 1930 - that's 35 years of partnership with the Davidsons. But in whale years, I feel as spry as a young calf!";
+    } else if (lowercaseMessage.includes('museum')) {
+      return "The Eden Killer Whale Museum? *voice fills with pride* Aye, they've got my skeleton there now. Bit strange thinking about it, but I'm glad the young'uns can still learn about our partnership. My bones tell the story of when humans and orcas worked as one. Visit sometime - you'll see the worn teeth from all those rope pulls!";
+    } else {
+      // Default responses for general conversation
+      const responses = [
+        "That's an interesting thought, young navigator! *swims in a thoughtful circle* In all my years patrolling these waters, I've learned that the ocean holds many mysteries. What specific tale would you like to hear about?",
+        "Ah, you've got the curiosity of a true sailor! *breaches playfully* The waters of Eden Bay have seen many adventures. Would you like to hear about our hunting techniques, the Davidson family, or perhaps the great storm of 1920?",
+        "*clicks and whistles* You know, in my day, we orcas had our own language - a mix of clicks, calls, and tail slaps. The Davidsons learned to read our signals just as we learned theirs. Communication, young one, that's the key to any good partnership!",
+        "Well now, that reminds me of something... *settles into storytelling mode* Every question has a story behind it in these waters. Tell me, what draws your interest most - our hunting partnership, life in the pod, or the human friends we made?"
+      ];
+      return responses[Math.floor(Math.random() * responses.length)];
     }
   };
 
@@ -156,19 +190,12 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
   const handlePlayMessage = async (message: ChatMessage) => {
     if (message.sender !== 'oldtom' || isSpeaking) return;
     
-    setIsSpeaking(true);
+    // Use browser TTS to speak the message
+    speakAsOldTom(message.text);
+    
     setMessages(prev => prev.map(msg => 
       msg.id === message.id ? { ...msg, isPlaying: true } : { ...msg, isPlaying: false }
-    ));
-
-    try {
-      await oldTomVoice.current.streamTextToSpeech(message.text, 'old-tom');
-    } catch (error) {
-      console.error('Error playing message:', error);
-    }
-    
-    setIsSpeaking(false);
-    setMessages(prev => prev.map(msg => ({ ...msg, isPlaying: false })));
+    )));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

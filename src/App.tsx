@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box, Typography, Button, Fade } from '@mui/material';
@@ -72,22 +72,76 @@ const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Browser TTS for Old Tom's voice
+  const speakAsOldTom = (text: string) => {
+    if (!('speechSynthesis' in window)) {
+      console.error('Browser does not support speech synthesis');
+      return;
+    }
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Load available voices
+    const voices = window.speechSynthesis.getVoices();
+    
+    // Find Australian or deep male voice
+    let oldTomVoice = voices.find(voice => 
+      voice.lang.includes('en-AU') || 
+      voice.name.toLowerCase().includes('australian')
+    ) || voices.find(voice => 
+      voice.name.toLowerCase().includes('daniel') ||
+      voice.name.toLowerCase().includes('david') ||
+      voice.name.toLowerCase().includes('male')
+    );
+    
+    if (oldTomVoice) {
+      utterance.voice = oldTomVoice;
+    }
+    
+    // Configure for old sea captain
+    utterance.pitch = 0.5;  // Deep, weathered voice
+    utterance.rate = 0.7;   // Slow, deliberate speech
+    utterance.volume = 0.9;
+
+    window.speechSynthesis.speak(utterance);
+  };
+
   const handleMeetOldTom = () => {
     if (!hasInteracted) {
       setHasInteracted(true);
       setCharacterAnimation('greeting');
       setCurrentMood('adventurous');
       
-      // Open chat after greeting animation
+      // Old Tom's greeting
+      const greeting = "G'day there, young sailor! I'm Old Tom, been swimming these waters for more years than you've been alive. Come closer, and I'll tell you tales of the great ocean hunts with the Davidson family!";
+      speakAsOldTom(greeting);
+      
+      // Open chat after greeting
       setTimeout(() => {
         setChatVisible(true);
         setCharacterAnimation('speaking');
-      }, 2000);
+      }, 3000);
     } else {
       setChatVisible(true);
       setCharacterAnimation('speaking');
     }
   };
+
+  // Load voices on mount
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      // Load voices
+      window.speechSynthesis.getVoices();
+      
+      // Chrome needs this event listener
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }, []);
 
   if (loading) {
     return <LoadingScreen />;
