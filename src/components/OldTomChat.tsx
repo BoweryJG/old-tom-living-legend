@@ -195,7 +195,7 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
     
     setMessages(prev => prev.map(msg => 
       msg.id === message.id ? { ...msg, isPlaying: true } : { ...msg, isPlaying: false }
-    )));
+    ));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
