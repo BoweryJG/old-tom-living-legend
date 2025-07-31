@@ -113,25 +113,25 @@ const theme = createTheme({
     h1: {
       fontFamily: '"Cinzel Decorative", "Playfair Display", serif',
       fontWeight: 800,
-      fontSize: 'clamp(2.5rem, 6vw, 4rem)',
+      fontSize: 'clamp(2rem, 8vw, 4rem)',
       letterSpacing: '0.05em',
       textShadow: '3px 3px 6px rgba(0,0,0,0.7)',
     },
     h2: {
       fontFamily: '"Cinzel", serif',
       fontWeight: 600,
-      fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
+      fontSize: 'clamp(1.25rem, 5vw, 2.5rem)',
       letterSpacing: '0.03em',
       textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
     },
     h3: {
       fontFamily: '"Cinzel", serif',
       fontWeight: 500,
-      fontSize: 'clamp(1.2rem, 3vw, 2rem)',
+      fontSize: 'clamp(1rem, 4vw, 2rem)',
     },
     body1: {
       fontFamily: '"Crimson Text", "Georgia", serif',
-      fontSize: 'clamp(1rem, 2vw, 1.3rem)',
+      fontSize: 'clamp(0.95rem, 2.5vw, 1.3rem)',
       lineHeight: 1.8,
     },
   },
@@ -312,40 +312,68 @@ const App: React.FC = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     minHeight: '100vh',
-                    px: 3,
+                    px: { xs: 2, sm: 3, md: 4 },
+                    py: { xs: 4, sm: 0 },
                     textAlign: 'center',
                   }}
                 >
-                  <Typography variant="h1" sx={{ color: '#FFFFFF', mb: 2 }}>
+                  <Typography 
+                    variant="h1" 
+                    sx={{ 
+                      color: '#FFFFFF', 
+                      mb: { xs: 1, sm: 2 },
+                      px: { xs: 1, sm: 0 }
+                    }}
+                  >
                     Old Tom
                   </Typography>
-                  <Typography variant="h2" sx={{ color: '#FFD700', fontStyle: 'italic', mb: 4 }}>
+                  <Typography 
+                    variant="h2" 
+                    sx={{ 
+                      color: '#FFD700', 
+                      fontStyle: 'italic', 
+                      mb: { xs: 3, sm: 4 },
+                      px: { xs: 1, sm: 0 }
+                    }}
+                  >
                     The Living Legend of Eden Bay
                   </Typography>
                   <Typography 
                     variant="body1" 
                     sx={{ 
                       color: 'rgba(255, 255, 255, 0.8)', 
-                      maxWidth: '600px', 
-                      mb: 6,
-                      fontSize: '1.2rem'
+                      maxWidth: { xs: '100%', sm: '600px' }, 
+                      mb: { xs: 4, sm: 6 },
+                      fontSize: { xs: '1rem', sm: '1.2rem' },
+                      px: { xs: 1, sm: 2 }
                     }}
                   >
                     The true story of an extraordinary partnership between orcas and whalers 
                     that lasted over 30 years in Eden, Australia.
                   </Typography>
                   
-                  <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      gap: { xs: 2, sm: 3 }, 
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      width: { xs: '100%', sm: 'auto' },
+                      px: { xs: 2, sm: 0 }
+                    }}
+                  >
                     <Button
                       variant="contained"
                       size="large"
                       onClick={startStory}
                       startIcon={<PlayIcon />}
+                      fullWidth
                       sx={{
                         background: 'linear-gradient(45deg, #2E8B57 30%, #4CAF50 90%)',
-                        fontSize: '1.2rem',
-                        px: 4,
-                        py: 2,
+                        fontSize: { xs: '1rem', sm: '1.2rem' },
+                        px: { xs: 3, sm: 4 },
+                        py: { xs: 1.5, sm: 2 },
+                        minHeight: { xs: '48px', sm: '56px' },
+                        width: { xs: '100%', sm: 'auto' }
                       }}
                     >
                       Begin the Story
@@ -356,12 +384,15 @@ const App: React.FC = () => {
                       size="large"
                       onClick={() => setChatVisible(true)}
                       startIcon={<ChatIcon />}
+                      fullWidth
                       sx={{
                         borderColor: '#FFD700',
                         color: '#FFD700',
-                        fontSize: '1.2rem',
-                        px: 4,
-                        py: 2,
+                        fontSize: { xs: '1rem', sm: '1.2rem' },
+                        px: { xs: 3, sm: 4 },
+                        py: { xs: 1.5, sm: 2 },
+                        minHeight: { xs: '48px', sm: '56px' },
+                        width: { xs: '100%', sm: 'auto' },
                         '&:hover': {
                           borderColor: '#FFD700',
                           backgroundColor: 'rgba(255, 215, 0, 0.1)',
@@ -390,14 +421,39 @@ const App: React.FC = () => {
                   }}
                 >
                   {/* Chapter Header */}
-                  <Box sx={{ textAlign: 'center', mb: 4 }}>
-                    <Typography variant="h3" sx={{ color: '#D4AF37', mb: 1 }}>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    mb: { xs: 3, sm: 4 },
+                    px: { xs: 1, sm: 0 }
+                  }}>
+                    <Typography 
+                      variant="h3" 
+                      sx={{ 
+                        color: '#D4AF37', 
+                        mb: 1,
+                        fontSize: { xs: '1rem', sm: '1.2rem', md: '1.5rem' }
+                      }}
+                    >
                       Chapter {currentChapter}
                     </Typography>
-                    <Typography variant="h2" sx={{ color: '#FFFFFF', mb: 2 }}>
+                    <Typography 
+                      variant="h2" 
+                      sx={{ 
+                        color: '#FFFFFF', 
+                        mb: { xs: 1, sm: 2 },
+                        fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' }
+                      }}
+                    >
                       {storyChapters[currentChapter - 1].title}
                     </Typography>
-                    <Typography variant="h3" sx={{ color: '#4FC3F7', fontStyle: 'italic' }}>
+                    <Typography 
+                      variant="h3" 
+                      sx={{ 
+                        color: '#4FC3F7', 
+                        fontStyle: 'italic',
+                        fontSize: { xs: '1rem', sm: '1.2rem', md: '1.5rem' }
+                      }}
+                    >
                       {storyChapters[currentChapter - 1].year}
                     </Typography>
                   </Box>
@@ -409,59 +465,69 @@ const App: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      maxWidth: '800px',
+                      maxWidth: { xs: '100%', sm: '90%', md: '800px' },
                       mx: 'auto',
                       position: 'relative',
+                      width: '100%',
                     }}
                   >
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        color: '#F5F5DC',
-                        textAlign: 'center',
-                        px: 3,
-                        py: 4,
-                        backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                        borderRadius: 2,
-                        backdropFilter: 'blur(5px)',
-                      }}
-                    >
-                      {storyChapters[currentChapter - 1].content}
-                    </Typography>
-                    
-                    {/* Narration Button */}
-                    <IconButton
-                      onClick={() => isNarrating ? stopNarration() : narateChapter(currentChapter - 1)}
-                      sx={{
-                        position: 'absolute',
-                        bottom: 20,
-                        right: 20,
-                        backgroundColor: isNarrating ? 'rgba(255, 87, 34, 0.2)' : 'rgba(255, 215, 0, 0.2)',
-                        color: isNarrating ? '#FF5722' : '#FFD700',
-                        border: `2px solid ${isNarrating ? '#FF5722' : '#FFD700'}`,
-                        '&:hover': {
-                          backgroundColor: isNarrating ? 'rgba(255, 87, 34, 0.3)' : 'rgba(255, 215, 0, 0.3)',
-                        },
-                        transition: 'all 0.3s ease',
-                      }}
-                      title={isNarrating ? "Stop narration" : "Listen to Old Tom narrate this chapter"}
-                    >
-                      {isNarrating ? (
-                        <>
-                          <StopIcon />
-                          <CircularProgress
-                            size={40}
-                            sx={{
-                              color: '#FF5722',
-                              position: 'absolute',
-                              opacity: 0.3,
-                            }}
-                          />
-                        </>
-                      ) : (
-                        <VolumeUpIcon />
-                      )}
-                    </IconButton>
+                    <Box sx={{ position: 'relative', width: '100%' }}>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          color: '#F5F5DC',
+                          textAlign: 'center',
+                          px: { xs: 2, sm: 3 },
+                          py: { xs: 3, sm: 4 },
+                          backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                          borderRadius: 2,
+                          backdropFilter: 'blur(5px)',
+                          fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.2rem' },
+                          lineHeight: { xs: 1.7, sm: 1.8 },
+                        }}
+                      >
+                        {storyChapters[currentChapter - 1].content}
+                      </Typography>
+                      
+                      {/* Narration Button */}
+                      <IconButton
+                        onClick={() => isNarrating ? stopNarration() : narateChapter(currentChapter - 1)}
+                        sx={{
+                          position: { xs: 'relative', sm: 'absolute' },
+                          bottom: { xs: 'auto', sm: 20 },
+                          right: { xs: 'auto', sm: 20 },
+                          mt: { xs: 2, sm: 0 },
+                          mx: { xs: 'auto', sm: 0 },
+                          display: { xs: 'flex', sm: 'inline-flex' },
+                          backgroundColor: isNarrating ? 'rgba(255, 87, 34, 0.2)' : 'rgba(255, 215, 0, 0.2)',
+                          color: isNarrating ? '#FF5722' : '#FFD700',
+                          border: `2px solid ${isNarrating ? '#FF5722' : '#FFD700'}`,
+                          width: { xs: '56px', sm: '48px' },
+                          height: { xs: '56px', sm: '48px' },
+                          '&:hover': {
+                            backgroundColor: isNarrating ? 'rgba(255, 87, 34, 0.3)' : 'rgba(255, 215, 0, 0.3)',
+                          },
+                          transition: 'all 0.3s ease',
+                        }}
+                        title={isNarrating ? "Stop narration" : "Listen to Old Tom narrate this chapter"}
+                      >
+                        {isNarrating ? (
+                          <>
+                            <StopIcon />
+                            <CircularProgress
+                              size={40}
+                              sx={{
+                                color: '#FF5722',
+                                position: 'absolute',
+                                opacity: 0.3,
+                              }}
+                            />
+                          </>
+                        ) : (
+                          <VolumeUpIcon />
+                        )}
+                      </IconButton>
+                    </Box>
                   </Box>
 
                   {/* Navigation */}
@@ -470,7 +536,9 @@ const App: React.FC = () => {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      mt: 4,
+                      mt: { xs: 3, sm: 4 },
+                      px: { xs: 1, sm: 0 },
+                      gap: { xs: 2, sm: 3 },
                     }}
                   >
                     <IconButton
@@ -479,20 +547,28 @@ const App: React.FC = () => {
                       sx={{
                         color: '#FFFFFF',
                         backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        width: { xs: '48px', sm: '56px' },
+                        height: { xs: '48px', sm: '56px' },
                         '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
                         '&:disabled': { opacity: 0.3 },
                       }}
                     >
-                      <ArrowBackIcon fontSize="large" />
+                      <ArrowBackIcon sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }} />
                     </IconButton>
 
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      gap: { xs: 0.5, sm: 1 },
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
+                      maxWidth: { xs: '200px', sm: 'none' }
+                    }}>
                       {storyChapters.map((_, index) => (
                         <Box
                           key={index}
                           sx={{
-                            width: 8,
-                            height: 8,
+                            width: { xs: 6, sm: 8 },
+                            height: { xs: 6, sm: 8 },
                             borderRadius: '50%',
                             backgroundColor: currentChapter === index + 1 ? '#FFD700' : 'rgba(255, 255, 255, 0.3)',
                             transition: 'all 0.3s ease',
@@ -507,20 +583,30 @@ const App: React.FC = () => {
                       sx={{
                         color: '#FFFFFF',
                         backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        width: { xs: '48px', sm: '56px' },
+                        height: { xs: '48px', sm: '56px' },
                         '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
                         '&:disabled': { opacity: 0.3 },
                       }}
                     >
-                      <ArrowForwardIcon fontSize="large" />
+                      <ArrowForwardIcon sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }} />
                     </IconButton>
                   </Box>
 
                   {/* Ask Old Tom Button */}
-                  <Box sx={{ textAlign: 'center', mt: 3 }}>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    mt: { xs: 2, sm: 3 },
+                    px: { xs: 2, sm: 0 }
+                  }}>
                     <Button
                       variant="text"
                       onClick={() => setChatVisible(true)}
-                      sx={{ color: '#4FC3F7' }}
+                      sx={{ 
+                        color: '#4FC3F7',
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
+                        padding: { xs: '8px 16px', sm: '10px 20px' }
+                      }}
                     >
                       Have questions? Ask Old Tom
                     </Button>
@@ -535,9 +621,10 @@ const App: React.FC = () => {
                 <Box
                   sx={{
                     position: 'fixed',
-                    bottom: '5%',
-                    right: '5%',
+                    bottom: { xs: '2%', sm: '5%' },
+                    right: { xs: '2%', sm: '5%' },
                     zIndex: 5,
+                    display: { xs: 'none', sm: 'block' }, // Hide on mobile to avoid clutter
                   }}
                 >
                   <OldTomCharacter

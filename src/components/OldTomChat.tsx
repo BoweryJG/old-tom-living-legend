@@ -222,13 +222,16 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      fullScreen={window.innerWidth < 600}
       PaperProps={{
         sx: {
-          height: '80vh',
+          height: { xs: '100vh', sm: '80vh' },
+          maxHeight: { xs: '100vh', sm: '80vh' },
           background: 'linear-gradient(135deg, rgba(15, 52, 96, 0.95) 0%, rgba(46, 139, 87, 0.95) 100%)',
           backdropFilter: 'blur(20px)',
-          border: '2px solid rgba(212, 175, 55, 0.3)',
-          borderRadius: 4,
+          border: { xs: 'none', sm: '2px solid rgba(212, 175, 55, 0.3)' },
+          borderRadius: { xs: 0, sm: 4 },
+          margin: { xs: 0, sm: 2 },
         }
       }}
     >
@@ -237,23 +240,30 @@ const OldTomChat: React.FC<OldTomChatProps> = ({ open, onClose }) => {
           background: 'linear-gradient(45deg, #2E8B57 30%, #4CAF50 90%)',
           color: '#F5F5DC',
           fontFamily: '"Cinzel", serif',
-          fontSize: '1.5rem',
+          fontSize: { xs: '1.2rem', sm: '1.5rem' },
           fontWeight: 600,
           textAlign: 'center',
           position: 'relative',
           borderBottom: '2px solid rgba(212, 175, 55, 0.3)',
+          py: { xs: 1.5, sm: 2 },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-          <Typography variant="h6" sx={{ fontFamily: '"Cinzel", serif' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: { xs: 1, sm: 2 } }}>
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              fontFamily: '"Cinzel", serif',
+              fontSize: { xs: '1.1rem', sm: '1.3rem' }
+            }}
+          >
             🐋 Conversation with Old Tom
           </Typography>
           <IconButton
             onClick={onClose}
             sx={{
               position: 'absolute',
-              right: 8,
-              top: 8,
+              right: { xs: 4, sm: 8 },
+              top: { xs: 4, sm: 8 },
               color: '#F5F5DC',
               '&:hover': { background: 'rgba(255,255,255,0.1)' }
             }}

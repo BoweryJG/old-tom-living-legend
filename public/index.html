@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#1565C0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#2E8B57" />
     <meta name="description" content="Old Tom: The Living Legend - A magical Studio Ghibli-style adventure" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -31,7 +31,7 @@
         left: 0;
         width: 100vw;
         height: 100vh;
-        background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+        background: linear-gradient(180deg, #0a1a2e 0%, #1a3a4e 50%, #0a2a3e 100%);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -43,8 +43,7 @@
       .loading-animation {
         width: 120px;
         height: 120px;
-        background: #1565C0;
-        border-radius: 50%;
+        font-size: 80px;
         animation: wave 2s ease-in-out infinite;
         margin-bottom: 2rem;
       }
@@ -57,7 +56,7 @@
       .loading-text {
         font-family: 'Georgia', serif;
         font-size: 1.5rem;
-        color: #1565C0;
+        color: #F5F5DC;
         text-align: center;
       }
     </style>
@@ -67,7 +66,7 @@
     
     <!-- Loading screen -->
     <div id="loading-screen">
-      <div class="loading-animation"></div>
+      <div class="loading-animation">🐋</div>
       <div class="loading-text">Loading Old Tom's Adventure...</div>
     </div>
     
