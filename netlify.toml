@@ -5,6 +5,7 @@
 [build.environment]
   SECRETS_SCAN_ENABLED = "false"
   CI = "false"
+  NETLIFY_CACHE_BUST = "2025-08-01-hooks-fix"
 
 [[redirects]]
   from = "/*"
