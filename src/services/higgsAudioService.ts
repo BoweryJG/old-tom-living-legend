@@ -10,40 +10,49 @@ class HiggsAudioService {
   async generateOldTomVoice(text: string): Promise<string | null> {
     try {
       // Use the correct API endpoint format
+      const requestBody = {
+        fn_index: 2,
+        data: [
+          text, // Input text
+          "en_man", // Voice preset - English male voice
+          null, // No reference audio
+          null, // No reference text
+          1024, // Max completion tokens
+          0.8, // Temperature - slightly lower for consistency
+          0.95, // Top P
+          50, // Top K
+          `Generate audio following instruction.
+
+<|scene_desc_start|>
+Audio is an elderly Australian sea captain, weathered voice, 80 years old, speaking slowly and deliberately with wisdom and warmth. Deep, gravelly voice with Australian accent.
+<|scene_desc_end|>`, // System prompt for Old Tom
+          { headers: ["stops"], data: [["<|end_of_text|>"], ["<|eot_id|>"]], metadata: null }, // Stop strings
+          7, // RAS Window Length
+          2, // RAS Max Num Repeat
+        ],
+      };
+
+      console.log('Sending request to Higgs API:', JSON.stringify(requestBody, null, 2));
+      
       const response = await fetch(`${this.baseUrl}/run/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          fn_index: 2,
-          data: [
-            text, // Input text
-            "en_man", // Voice preset - English male voice
-            null, // No reference audio
-            null, // No reference text
-            1024, // Max completion tokens
-            0.8, // Temperature - slightly lower for consistency
-            0.95, // Top P
-            50, // Top K
-            `Generate audio following instruction.
-
-<|scene_desc_start|>
-Audio is an elderly Australian sea captain, weathered voice, 80 years old, speaking slowly and deliberately with wisdom and warmth. Deep, gravelly voice with Australian accent.
-<|scene_desc_end|>`, // System prompt for Old Tom
-            { headers: ["stops"], data: [["<|end_of_text|>"], ["<|eot_id|>"]], metadata: null }, // Stop strings
-            7, // RAS Window Length
-            2, // RAS Max Num Repeat
-          ],
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
       if (!response.ok) {
-        throw new Error('Failed to generate audio');
+        const errorText = await response.text();
+        console.error('API Error response:', errorText);
+        throw new Error(`Failed to generate audio: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('Higgs API response:', result);
+      console.log('Higgs API response:', JSON.stringify(result, null, 2));
       
       // The API returns data array with [text_response, audio_data]
       if (result && result.data && result.data[1]) {
@@ -67,6 +76,10 @@ Audio is an elderly Australian sea captain, weathered voice, 80 years old, speak
       return null;
     } catch (error) {
       console.error('Error generating Old Tom voice:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       return null;
     }
   }
