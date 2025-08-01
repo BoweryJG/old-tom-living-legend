@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { audioVisualSyncService } from '../services/audioVisualSyncService';
 import { storyIntegrationService } from '../services/storyIntegrationService';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { setMasterVolume, toggleMute } from '../store/slices/audioSlice';
+import { setMasterVolume } from '../store/slices/audioSlice';
 
 interface AudioTrack {
   id: string;
