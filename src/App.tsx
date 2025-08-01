@@ -23,6 +23,7 @@ import LoadingScreen from './components/ui/LoadingScreen';
 import { higgsAudioService } from './services/higgsAudioService';
 import ChapterVisuals from './components/ChapterVisuals';
 import AmbientSounds from './components/AmbientSounds';
+import DebugPanel from './components/DebugPanel';
 
 // Story chapters
 const storyChapters = [
@@ -196,27 +197,36 @@ const App: React.FC = () => {
 
     try {
       const chapterText = storyChapters[chapterIndex].content;
+      console.log('🎤 Generating Old Tom voice for chapter:', chapterIndex);
+      console.log('Text:', chapterText);
+      
       const audioUrl = await higgsAudioService.generateOldTomVoice(chapterText);
+      console.log('🔊 Generated audio URL:', audioUrl);
       
       if (audioUrl) {
         const audio = new Audio(audioUrl);
         setCurrentAudio(audio);
         
         audio.onended = () => {
+          console.log('✅ Audio playback completed');
           setIsNarrating(false);
           setCharacterAnimation('idle');
           setCurrentAudio(null);
         };
         
-        audio.onerror = () => {
+        audio.onerror = (e) => {
+          console.error('❌ Audio playback error:', e);
+          console.error('Failed URL was:', audioUrl);
           // Fallback to whale sounds if narration fails
           playWhaleSound();
           setIsNarrating(false);
           setCharacterAnimation('idle');
         };
         
+        console.log('▶️ Starting audio playback...');
         await audio.play();
       } else {
+        console.error('❌ No audio URL returned from Higgs service');
         // Fallback to whale sounds
         playWhaleSound();
         setIsNarrating(false);
@@ -678,6 +688,9 @@ const App: React.FC = () => {
               chapter={currentChapter}
               isPlaying={currentChapter > 0}
             />
+
+            {/* Debug Panel for iPad */}
+            <DebugPanel />
           </Box>
         </ThemeProvider>
       </AccessibilityProvider>

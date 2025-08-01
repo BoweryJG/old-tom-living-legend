@@ -9,17 +9,16 @@ class HiggsAudioService {
   
   async generateOldTomVoice(text: string): Promise<string | null> {
     try {
-      // Use the API endpoint for generate_speech
-      const response = await fetch(`${this.baseUrl}/run/predict`, {
+      // Use the correct API endpoint format
+      const response = await fetch(`${this.baseUrl}/gradio_api/run/generate_speech`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          fn_index: 2, // generate_speech function
           data: [
             text, // Input text
-            "en_man", // Voice preset - using English male voice
+            "EMPTY", // Voice preset - EMPTY as shown in example
             null, // No reference audio
             null, // No reference text
             1024, // Max completion tokens
@@ -27,6 +26,7 @@ class HiggsAudioService {
             0.95, // Top P
             50, // Top K
             `Generate audio following instruction.
+
 <|scene_desc_start|>
 Audio is an elderly Australian sea captain, weathered voice, 80 years old, speaking slowly and deliberately with wisdom and warmth. Deep, gravelly voice with Australian accent.
 <|scene_desc_end|>`, // System prompt for Old Tom
@@ -42,11 +42,25 @@ Audio is an elderly Australian sea captain, weathered voice, 80 years old, speak
       }
 
       const result = await response.json();
+      console.log('Higgs API response:', result);
       
-      // The API returns [model_response, audio_file_path]
-      if (result.data && result.data[1]) {
-        // Convert the file path to a full URL
-        return `${this.baseUrl}/file=${result.data[1]}`;
+      // The API returns data array with [text_response, audio_data]
+      if (result && result.data && result.data[1]) {
+        // Check if it's a file path or base64 data
+        const audioData = result.data[1];
+        
+        // If it's a file object with name property
+        if (audioData.name) {
+          return `${this.baseUrl}/file=${audioData.name}`;
+        }
+        // If it's a direct file path string
+        else if (typeof audioData === 'string' && audioData.startsWith('/tmp/')) {
+          return `${this.baseUrl}/file=${audioData}`;
+        }
+        // If it's base64 data
+        else if (typeof audioData === 'string' && audioData.includes('base64')) {
+          return audioData;
+        }
       }
       
       return null;
