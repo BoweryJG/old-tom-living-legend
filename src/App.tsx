@@ -12,8 +12,6 @@ import {
   Stop as StopIcon
 } from '@mui/icons-material';
 
-console.log('App.tsx: Starting imports...');
-
 // Import components
 import OceanParticles from './components/OceanParticles';
 import OldTomCharacter from './components/OldTomCharacter';
@@ -26,27 +24,31 @@ import ChapterVisuals from './components/ChapterVisuals';
 import AmbientSounds from './components/AmbientSounds';
 import DebugPanel from './components/DebugPanel';
 
-console.log('App.tsx: Component imports complete, importing services...');
-
 // Import services with error handling
 let higgsAudioService: any = null;
 let webSpeechService: any = null;
 
-try {
-  higgsAudioService = require('./services/higgsAudioService').higgsAudioService;
-  console.log('App.tsx: higgsAudioService imported successfully');
-} catch (error) {
-  console.error('App.tsx: Failed to import higgsAudioService:', error);
-}
+// Initialize logging after all imports
+if (typeof window !== 'undefined') {
+  console.log('App.tsx: Starting imports...');
+  console.log('App.tsx: Component imports complete, importing services...');
+  
+  try {
+    higgsAudioService = require('./services/higgsAudioService').higgsAudioService;
+    console.log('App.tsx: higgsAudioService imported successfully');
+  } catch (error) {
+    console.error('App.tsx: Failed to import higgsAudioService:', error);
+  }
 
-try {
-  webSpeechService = require('./services/webSpeechService').webSpeechService;
-  console.log('App.tsx: webSpeechService imported successfully');
-} catch (error) {
-  console.error('App.tsx: Failed to import webSpeechService:', error);
+  try {
+    webSpeechService = require('./services/webSpeechService').webSpeechService;
+    console.log('App.tsx: webSpeechService imported successfully');
+  } catch (error) {
+    console.error('App.tsx: Failed to import webSpeechService:', error);
+  }
+  
+  console.log('App.tsx: All imports complete');
 }
-
-console.log('App.tsx: All imports complete');
 
 // Story chapters
 const storyChapters = [
