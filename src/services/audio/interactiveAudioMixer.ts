@@ -855,36 +855,40 @@ export class InteractiveAudioMixer {
 // Create audio context lazily
 let audioContext: AudioContext | null = null;
 const getAudioContext = (): AudioContext => {
-  if (!audioContext) {
+  if (!audioContext && typeof window !== 'undefined') {
     audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
   }
-  return audioContext;
+  return audioContext!;
 };
 
 // Create orchestral composer instance lazily
 let orchestralComposerInstance: OrchestralComposer | null = null;
 const getOrchestralComposer = (): OrchestralComposer => {
-  if (!orchestralComposerInstance) {
+  if (!orchestralComposerInstance && typeof window !== 'undefined') {
     orchestralComposerInstance = new OrchestralComposer(getAudioContext());
   }
-  return orchestralComposerInstance;
+  return orchestralComposerInstance!;
 };
 
-// Create singleton factory function that initializes dependencies
-class InteractiveAudioMixerSingleton {
-  private static instance: InteractiveAudioMixer | null = null;
+// Create singleton instance lazily
+let interactiveAudioMixerInstance: InteractiveAudioMixer | null = null;
 
-  static getInstance(): InteractiveAudioMixer {
-    if (!this.instance) {
-      this.instance = new InteractiveAudioMixer(
-        getOrchestralComposer(),
-        spatialAudioEngine as any, // Cast to any to avoid circular dependency type issues
-        getAudioContext()
-      );
-    }
-    return this.instance;
+// Export a getter function instead of immediate initialization
+const getInteractiveAudioMixer = (): InteractiveAudioMixer => {
+  if (!interactiveAudioMixerInstance && typeof window !== 'undefined') {
+    interactiveAudioMixerInstance = new InteractiveAudioMixer(
+      getOrchestralComposer(),
+      spatialAudioEngine as any,
+      getAudioContext()
+    );
   }
-}
+  return interactiveAudioMixerInstance!;
+};
 
-// Export singleton instance getter
-export const interactiveAudioMixer = InteractiveAudioMixerSingleton.getInstance();
+// Export as a proxy that initializes on first access
+export const interactiveAudioMixer = new Proxy({} as InteractiveAudioMixer, {
+  get(target, prop) {
+    const instance = getInteractiveAudioMixer();
+    return instance[prop as keyof InteractiveAudioMixer];
+  }
+});
