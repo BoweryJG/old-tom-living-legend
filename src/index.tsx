@@ -1,17 +1,79 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
 
-// Global error handler to catch initialization errors
+// Create a debug div immediately
+const debugDiv = document.createElement('div');
+debugDiv.id = 'debug-panel';
+debugDiv.style.cssText = `
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: black;
+  color: white;
+  padding: 20px;
+  z-index: 999999;
+  font-family: monospace;
+  font-size: 14px;
+  max-width: 400px;
+  border: 2px solid red;
+`;
+debugDiv.innerHTML = '<h3>DEBUG PANEL</h3><div id="debug-content">Loading index.tsx...</div>';
+document.body.appendChild(debugDiv);
+
+function addDebug(message: string) {
+  const content = document.getElementById('debug-content');
+  if (content) {
+    content.innerHTML += `<div>${new Date().toISOString().split('T')[1].split('.')[0]} - ${message}</div>`;
+  }
+  console.log(`DEBUG: ${message}`);
+}
+
+addDebug('index.tsx loaded');
+
+// Global error handler
 window.addEventListener('error', (event) => {
+  addDebug(`ERROR: ${event.error}`);
   console.error('Global error:', event.error);
 });
 
 window.addEventListener('unhandledrejection', (event) => {
+  addDebug(`PROMISE REJECT: ${event.reason}`);
   console.error('Unhandled promise rejection:', event.reason);
 });
 
-// Simple error boundary for initialization errors
+// Try to load App
+let App: any = null;
+let AppSimple: any = null;
+
+try {
+  addDebug('Importing AppSimple...');
+  AppSimple = require('./AppSimple').default;
+  addDebug('AppSimple imported successfully');
+} catch (error) {
+  addDebug(`FAILED to import AppSimple: ${error}`);
+}
+
+try {
+  addDebug('Importing App...');
+  App = require('./App').default;
+  addDebug('App imported successfully');
+} catch (error) {
+  addDebug(`FAILED to import App: ${error}`);
+  console.error('Failed to import App:', error);
+}
+
+// Simple test component
+const TestApp = () => {
+  return (
+    <div style={{ padding: '20px', backgroundColor: 'navy', color: 'white', minHeight: '100vh' }}>
+      <h1>Old Tom App - Debug Mode</h1>
+      <p>If you see this, React is working but App component failed to load.</p>
+      <button onClick={() => window.location.reload()}>Reload</button>
+    </div>
+  );
+};
+
+// Error boundary
 class InitErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; error: Error | null }
@@ -22,10 +84,12 @@ class InitErrorBoundary extends React.Component<
   }
 
   static getDerivedStateFromError(error: Error) {
+    addDebug(`React Error: ${error}`);
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    addDebug(`Component Error: ${error.message}`);
     console.error('React Error Boundary caught:', error, errorInfo);
   }
 
@@ -34,25 +98,13 @@ class InitErrorBoundary extends React.Component<
       return (
         <div style={{ 
           padding: '20px', 
-          textAlign: 'center',
-          backgroundColor: '#f8f8f8',
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center'
+          backgroundColor: 'darkred',
+          color: 'white',
+          minHeight: '100vh'
         }}>
-          <h1>Something went wrong</h1>
-          <p>Please check the browser console for details.</p>
-          <pre style={{ 
-            textAlign: 'left', 
-            background: '#eee', 
-            padding: '10px',
-            maxWidth: '80%',
-            overflow: 'auto'
-          }}>
-            {this.state.error?.toString()}
-          </pre>
+          <h1>React Error</h1>
+          <pre>{this.state.error?.toString()}</pre>
+          <pre>{this.state.error?.stack}</pre>
         </div>
       );
     }
@@ -61,14 +113,28 @@ class InitErrorBoundary extends React.Component<
   }
 }
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-
-root.render(
-  <React.StrictMode>
-    <InitErrorBoundary>
-      <App />
-    </InitErrorBoundary>
-  </React.StrictMode>
-);
+try {
+  addDebug('Creating React root...');
+  const root = ReactDOM.createRoot(
+    document.getElementById('root') as HTMLElement
+  );
+  
+  addDebug('Rendering app...');
+  
+  // Use App if it loaded, otherwise AppSimple, otherwise TestApp
+  const ComponentToRender = App || AppSimple || TestApp;
+  addDebug(`Using component: ${App ? 'App' : AppSimple ? 'AppSimple' : 'TestApp'}`);
+  
+  root.render(
+    <React.StrictMode>
+      <InitErrorBoundary>
+        <ComponentToRender />
+      </InitErrorBoundary>
+    </React.StrictMode>
+  );
+  
+  addDebug('Render complete');
+} catch (error) {
+  addDebug(`FATAL ERROR: ${error}`);
+  console.error('Fatal error during render:', error);
+}
