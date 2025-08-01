@@ -21,6 +21,7 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { AccessibilityProvider } from './components/accessibility/AccessibilityProvider';
 import LoadingScreen from './components/ui/LoadingScreen';
 import { higgsAudioService } from './services/higgsAudioService';
+import { webSpeechService } from './services/webSpeechService';
 import ChapterVisuals from './components/ChapterVisuals';
 import AmbientSounds from './components/AmbientSounds';
 import DebugPanel from './components/DebugPanel';
@@ -227,10 +228,20 @@ const App: React.FC = () => {
         await audio.play();
       } else {
         console.error('❌ No audio URL returned from Higgs service');
-        // Fallback to whale sounds
-        playWhaleSound();
-        setIsNarrating(false);
-        setCharacterAnimation('idle');
+        console.log('🔄 Falling back to Web Speech API...');
+        
+        try {
+          // Use Web Speech API as fallback
+          await webSpeechService.generateOldTomVoice(chapterText);
+          setIsNarrating(false);
+          setCharacterAnimation('idle');
+        } catch (speechError) {
+          console.error('❌ Web Speech API also failed:', speechError);
+          // Final fallback to whale sounds
+          playWhaleSound();
+          setIsNarrating(false);
+          setCharacterAnimation('idle');
+        }
       }
     } catch (error) {
       console.error('Error narrating chapter:', error);
@@ -246,6 +257,8 @@ const App: React.FC = () => {
       currentAudio.src = '';
       setCurrentAudio(null);
     }
+    // Also stop Web Speech if it's playing
+    webSpeechService.stop();
     setIsNarrating(false);
     setCharacterAnimation('idle');
   };
