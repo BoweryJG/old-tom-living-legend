@@ -7,8 +7,15 @@ import {
   Pause,
   MusicNote,
   VolumeDown,
+  SkipNext,
+  SkipPrevious,
+  Sync,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
+import { audioVisualSyncService } from '../services/audioVisualSyncService';
+import { storyIntegrationService } from '../services/storyIntegrationService';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { setMasterVolume, toggleMute } from '../store/slices/audioSlice';
 
 interface AudioTrack {
   id: string;
@@ -24,20 +31,27 @@ interface OrchestraManagerProps {
   isPlaying?: boolean;
   volume?: number;
   onMoodChange?: (mood: string) => void;
+  onPlaybackToggle?: () => void;
 }
 
 const OrchestraManager: React.FC<OrchestraManagerProps> = ({
   currentMood = 'peaceful',
   isPlaying = true,
   volume = 0.3,
-  onMoodChange
+  onMoodChange,
+  onPlaybackToggle
 }) => {
-  const [masterVolume, setMasterVolume] = useState(volume);
+  const dispatch = useAppDispatch();
+  const { masterVolume: globalMasterVolume, isMuted } = useAppSelector(state => state.audio);
+  
+  const [masterVolume, setMasterVolume] = useState(globalMasterVolume || volume);
   const [isMusicPlaying, setIsMusicPlaying] = useState(isPlaying);
   const [userHasInteracted, setUserHasInteracted] = useState(false);
-  // const [currentTrack] = useState<AudioTrack | null>(null); // Unused for now
   const [isControlsVisible, setIsControlsVisible] = useState(false);
   const [audioLayers, setAudioLayers] = useState<Map<string, HTMLAudioElement>>(new Map());
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced'>('idle');
+  const [currentSegmentId, setCurrentSegmentId] = useState<string | null>(null);
+  const [playbackProgress, setPlaybackProgress] = useState(0);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const gainNodesRef = useRef<Map<string, GainNode>>(new Map());
@@ -169,6 +183,63 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Initialize audio-visual sync
+  useEffect(() => {
+    const initializeSync = async () => {
+      try {
+        // Get current story segment
+        const currentSegment = await storyIntegrationService.getCurrentSegment();
+        if (currentSegment?.segment) {
+          setCurrentSegmentId(currentSegment.segment.id);
+          setSyncStatus('syncing');
+          
+          // Prepare synchronized playback
+          const syncedSegment = await audioVisualSyncService.prepareSegment(currentSegment.segment.id);
+          setSyncStatus('synced');
+          
+          // Register callbacks for visual updates
+          audioVisualSyncService.registerVisualCallback('orchestra-manager', (keyframe) => {
+            // Update mood based on keyframe emotion
+            if (keyframe.emotion && keyframe.emotion !== currentMood) {
+              onMoodChange?.(keyframe.emotion as any);
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Failed to initialize sync:', error);
+        setSyncStatus('idle');
+      }
+    };
+
+    initializeSync();
+
+    // Listen for sync events
+    const handleTimeUpdate = (event: any) => {
+      setPlaybackProgress(event.detail.progress);
+    };
+
+    const handleSegmentComplete = async (event: any) => {
+      const nextSegment = await storyIntegrationService.nextSegment();
+      if (nextSegment) {
+        setCurrentSegmentId(nextSegment.segment.id);
+        const syncedSegment = await audioVisualSyncService.prepareSegment(nextSegment.segment.id);
+        if (isMusicPlaying) {
+          audioVisualSyncService.play(syncedSegment);
+        }
+      }
+    };
+
+    window.addEventListener('audioVisualTimeUpdate', handleTimeUpdate);
+    window.addEventListener('segmentComplete', handleSegmentComplete);
+
+    return () => {
+      window.removeEventListener('audioVisualTimeUpdate', handleTimeUpdate);
+      window.removeEventListener('segmentComplete', handleSegmentComplete);
+      audioVisualSyncService.unregisterCallbacks('orchestra-manager');
+      audioVisualSyncService.stop();
+    };
+  }, [currentMood, isMusicPlaying, onMoodChange]);
+
   // Fallback to HTML5 audio if Web Audio API fails
   const initializeFallbackAudio = () => {
     const audioMap = new Map<string, HTMLAudioElement>();
@@ -235,11 +306,30 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
     setMasterVolume(volume / 100);
   };
 
-  const togglePlayback = () => {
-    setIsMusicPlaying(!isMusicPlaying);
+  const togglePlayback = async () => {
+    const newPlayingState = !isMusicPlaying;
+    setIsMusicPlaying(newPlayingState);
     
+    // Handle audio-visual sync
+    if (syncStatus === 'synced') {
+      const playbackState = audioVisualSyncService.getPlaybackState();
+      
+      if (newPlayingState) {
+        // Start synchronized playback
+        if (playbackState.currentTime > 0 && playbackState.currentTime < playbackState.totalDuration) {
+          audioVisualSyncService.resume();
+        } else {
+          await audioVisualSyncService.play();
+        }
+      } else {
+        // Pause synchronized playback
+        audioVisualSyncService.pause();
+      }
+    }
+    
+    // Handle orchestra layers
     audioLayers.forEach(audio => {
-      if (isMusicPlaying) {
+      if (!newPlayingState) {
         if (!audio.paused) {
           audio.pause();
         }
@@ -250,6 +340,14 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
         }
       }
     });
+    
+    // Update global state
+    if (newPlayingState) {
+      dispatch(setMasterVolume(masterVolume));
+    }
+    
+    // Notify parent
+    onPlaybackToggle?.();
   };
 
   const changeMood = (newMood: typeof currentMood) => {
@@ -386,6 +484,50 @@ const OrchestraManager: React.FC<OrchestraManagerProps> = ({
               >
                 🎼 Ocean Symphony
               </Typography>
+
+              {/* Sync Status */}
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Sync sx={{ 
+                  color: syncStatus === 'synced' ? '#4CAF50' : '#F5F5DC',
+                  mr: 1,
+                  fontSize: '1rem',
+                  animation: syncStatus === 'syncing' ? 'spin 2s linear infinite' : 'none',
+                  '@keyframes spin': {
+                    '0%': { transform: 'rotate(0deg)' },
+                    '100%': { transform: 'rotate(360deg)' }
+                  }
+                }} />
+                <Typography variant="caption" sx={{ color: '#F5F5DC' }}>
+                  {syncStatus === 'synced' ? 'Audio-Visual Synced' : 
+                   syncStatus === 'syncing' ? 'Syncing...' : 'Not Synced'}
+                </Typography>
+              </Box>
+
+              {/* Progress Bar */}
+              {currentSegmentId && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="caption" sx={{ color: '#F5F5DC', fontSize: '0.7rem' }}>
+                    Segment: {currentSegmentId}
+                  </Typography>
+                  <Slider
+                    size="small"
+                    value={playbackProgress * 100}
+                    disabled
+                    sx={{
+                      color: '#4FC3F7',
+                      '& .MuiSlider-thumb': {
+                        display: 'none',
+                      },
+                      '& .MuiSlider-track': {
+                        backgroundColor: '#D4AF37',
+                      },
+                      '& .MuiSlider-rail': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      },
+                    }}
+                  />
+                </Box>
+              )}
 
               {/* Volume Control */}
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
