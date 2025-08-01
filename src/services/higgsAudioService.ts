@@ -9,9 +9,14 @@ class HiggsAudioService {
   
   async generateOldTomVoice(text: string): Promise<string | null> {
     try {
-      // Step 1: Submit the request to the queue
-      const joinData = {
+      // Use the correct Gradio API endpoint
+      const predictData = {
         data: [
+          `Generate audio following instruction.
+
+<|scene_desc_start|>
+Audio is an elderly Australian sea captain, weathered voice, 80 years old, speaking slowly and deliberately with wisdom and warmth. Deep, gravelly voice with Australian accent.
+<|scene_desc_end|>`, // System prompt for Old Tom
           text, // Input text
           "en_man", // Voice preset - English male voice
           null, // No reference audio
@@ -20,82 +25,86 @@ class HiggsAudioService {
           0.8, // Temperature - slightly lower for consistency
           0.95, // Top P
           50, // Top K
-          `Generate audio following instruction.
-
-<|scene_desc_start|>
-Audio is an elderly Australian sea captain, weathered voice, 80 years old, speaking slowly and deliberately with wisdom and warmth. Deep, gravelly voice with Australian accent.
-<|scene_desc_end|>`, // System prompt for Old Tom
           { headers: ["stops"], data: [["<|end_of_text|>"], ["<|eot_id|>"]], metadata: null }, // Stop strings
           7, // RAS Window Length
           2, // RAS Max Num Repeat
         ],
-        event_data: null,
         fn_index: 2,
-        trigger_id: 22,
-        session_hash: Math.random().toString(36).substring(7),
       };
 
-      console.log('Joining queue with request:', JSON.stringify(joinData, null, 2));
+      console.log('Calling Gradio API with request:', JSON.stringify(predictData, null, 2));
       
-      const joinResponse = await fetch(`${this.baseUrl}/queue/join`, {
+      const response = await fetch(`${this.baseUrl}/gradio_api/call/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(joinData),
+        body: JSON.stringify(predictData),
       });
 
-      if (!joinResponse.ok) {
-        const errorText = await joinResponse.text();
-        console.error('Queue join error:', errorText);
-        throw new Error(`Failed to join queue: ${joinResponse.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API call error:', errorText);
+        throw new Error(`Failed to call API: ${response.status}`);
       }
 
-      const eventId = await joinResponse.json();
-      console.log('Queue event ID:', eventId);
+      const result = await response.json();
+      console.log('API response:', result);
 
-      // Step 2: Get the data using SSE
-      return new Promise((resolve) => {
-        const eventSource = new EventSource(`${this.baseUrl}/queue/data?session_hash=${joinData.session_hash}`);
+      // The response should contain an event_id
+      if (result.event_id) {
+        // Now fetch the result using the event_id
+        const resultResponse = await fetch(`${this.baseUrl}/gradio_api/call/predict/${result.event_id}`);
         
-        eventSource.onmessage = (event) => {
-          const msg = JSON.parse(event.data);
-          console.log('SSE message:', msg);
-          
-          if (msg.msg === 'process_completed') {
-            eventSource.close();
-            
-            if (msg.success && msg.output && msg.output.data && msg.output.data[1]) {
-              const audioData = msg.output.data[1];
-              
-              // Handle different response types
-              if (audioData.name) {
-                resolve(`${this.baseUrl}/file=${audioData.name}`);
-              } else if (typeof audioData === 'string' && audioData.startsWith('/tmp/')) {
-                resolve(`${this.baseUrl}/file=${audioData}`);
-              } else if (typeof audioData === 'string' && audioData.includes('base64')) {
-                resolve(audioData);
-              } else {
-                console.error('Unknown audio data format:', audioData);
-                resolve(null);
-              }
-            } else {
-              console.error('No audio data in response');
-              resolve(null);
-            }
-          } else if (msg.msg === 'process_error') {
-            console.error('Process error:', msg);
-            eventSource.close();
-            resolve(null);
-          }
-        };
+        if (!resultResponse.ok) {
+          throw new Error(`Failed to get result: ${resultResponse.status}`);
+        }
 
-        eventSource.onerror = (error) => {
-          console.error('SSE error:', error);
-          eventSource.close();
-          resolve(null);
-        };
-      });
+        // Read the stream
+        const reader = resultResponse.body?.getReader();
+        if (!reader) {
+          throw new Error('No response body');
+        }
+
+        let audioUrl = null;
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.trim().startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.substring(6));
+                console.log('Stream data:', data);
+                
+                if (data[1] && data[1].path) {
+                  // Audio file path returned
+                  audioUrl = `${this.baseUrl}/file=${data[1].path}`;
+                } else if (data[1] && typeof data[1] === 'string') {
+                  // Direct audio URL or base64
+                  if (data[1].startsWith('http') || data[1].includes('base64')) {
+                    audioUrl = data[1];
+                  } else {
+                    audioUrl = `${this.baseUrl}/file=${data[1]}`;
+                  }
+                }
+              } catch (e) {
+                console.error('Error parsing stream data:', e);
+              }
+            }
+          }
+        }
+
+        return audioUrl;
+      } else {
+        console.error('No event_id in response');
+        return null;
+      }
     } catch (error) {
       console.error('Error generating Old Tom voice:', error);
       console.error('Error details:', {
