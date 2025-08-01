@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captain George Davidson - Old Tom Narration (Higgs Audio)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #001a33;
+            color: #ffffff;
+        }
+        .narrator {
+            background: rgba(0, 50, 100, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #0099ff;
+        }
+        button {
+            background: #0099ff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #0066cc;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .status {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .error {
+            color: #ff6666;
+        }
+        .success {
+            color: #66ff66;
+        }
+        audio {
+            width: 100%;
+            margin: 20px 0;
+        }
+        #narrationText {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐋 Captain George Davidson's Old Tom Story</h1>
+    
+    <div class="narrator">
+        <h2>Test Higgs Audio Narration</h2>
+        <p>Click the button below to generate Captain George's voice telling the story of Old Tom.</p>
+    </div>
+
+    <div id="narrationText">
+        G'day there, little mate. Close your eyes for just a moment... Can you hear it? That's the sound of the ocean calling. My name's Captain George Davidson, and I'm going to tell you the most extraordinary true story you've ever heard. A story about a whale who changed the world with one flip of his mighty tail.
+    </div>
+
+    <button id="generateBtn" onclick="generateAudio()">Generate Captain's Voice</button>
+    <button id="testShortBtn" onclick="generateShortAudio()">Test Short Version</button>
+
+    <div id="status" class="status">Ready to generate audio...</div>
+    
+    <audio id="audioPlayer" controls style="display: none;"></audio>
+
+    <script>
+        const HIGGS_URL = 'https://smola-higgs-audio-v2.hf.space';
+        
+        async function generateAudio() {
+            const btn = document.getElementById('generateBtn');
+            const status = document.getElementById('status');
+            const audioPlayer = document.getElementById('audioPlayer');
+            
+            btn.disabled = true;
+            status.innerHTML = '🎙️ Generating audio...';
+            
+            const text = document.getElementById('narrationText').innerText;
+            
+            try {
+                // Direct API call to Higgs Audio
+                const response = await fetch(`${HIGGS_URL}/run/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        fn_index: 2,
+                        data: [
+                            `Generate audio following instruction.\n\n<|scene_desc_start|>\nAudio is an elderly Australian sea captain, weathered voice, 80 years old, speaking slowly and deliberately with wisdom and warmth. Deep, gravelly voice with Australian accent.\n<|scene_desc_end|>`,
+                            text,
+                            "en_man",
+                            null,
+                            null,
+                            1024,
+                            0.8,
+                            0.95,
+                            50,
+                            { headers: ["stops"], data: [["<|end_of_text|>"], ["<|eot_id|>"]], metadata: null },
+                            7,
+                            2,
+                        ],
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('Result:', result);
+
+                if (result.data && result.data[1]) {
+                    // Audio file path returned
+                    const audioPath = result.data[1];
+                    const audioUrl = typeof audioPath === 'object' && audioPath.path 
+                        ? `${HIGGS_URL}/file=${audioPath.path}`
+                        : `${HIGGS_URL}/file=${audioPath}`;
+                    
+                    audioPlayer.src = audioUrl;
+                    audioPlayer.style.display = 'block';
+                    status.innerHTML = '<span class="success">✅ Audio generated successfully! Press play to listen.</span>';
+                } else {
+                    throw new Error('No audio data in response');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                status.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                
+                // Try alternative approach
+                tryAlternativeGeneration(text);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function generateShortAudio() {
+            const btn = document.getElementById('testShortBtn');
+            const status = document.getElementById('status');
+            const audioPlayer = document.getElementById('audioPlayer');
+            
+            btn.disabled = true;
+            status.innerHTML = '🎙️ Generating short test audio...';
+            
+            const shortText = "G'day mate. I'm Captain George Davidson. Let me tell you about Old Tom.";
+            
+            try {
+                const response = await fetch(`${HIGGS_URL}/run/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        fn_index: 2,
+                        data: [
+                            `Generate audio following instruction.\n\n<|scene_desc_start|>\nAudio is an elderly Australian sea captain, weathered voice, 80 years old, speaking slowly and deliberately with wisdom and warmth. Deep, gravelly voice with Australian accent.\n<|scene_desc_end|>`,
+                            shortText,
+                            "en_man",
+                            null,
+                            null,
+                            512, // Shorter for test
+                            0.8,
+                            0.95,
+                            50,
+                            { headers: ["stops"], data: [["<|end_of_text|>"], ["<|eot_id|>"]], metadata: null },
+                            7,
+                            2,
+                        ],
+                    }),
+                });
+
+                const result = await response.json();
+                console.log('Short test result:', result);
+
+                if (result.data && result.data[1]) {
+                    const audioPath = result.data[1];
+                    const audioUrl = typeof audioPath === 'object' && audioPath.path 
+                        ? `${HIGGS_URL}/file=${audioPath.path}`
+                        : `${HIGGS_URL}/file=${audioPath}`;
+                    
+                    audioPlayer.src = audioUrl;
+                    audioPlayer.style.display = 'block';
+                    status.innerHTML = '<span class="success">✅ Short audio generated! Press play to listen.</span>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                status.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function tryAlternativeGeneration(text) {
+            const status = document.getElementById('status');
+            status.innerHTML += '<br>🔄 Trying alternative method...';
+            
+            // Try using the queue-based approach
+            const sessionHash = Math.random().toString(36).substring(7);
+            
+            try {
+                const response = await fetch(`${HIGGS_URL}/queue/join`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        data: [
+                            `Generate audio following instruction.\n\n<|scene_desc_start|>\nAudio is an elderly Australian sea captain, weathered voice, 80 years old, speaking slowly and deliberately with wisdom and warmth. Deep, gravelly voice with Australian accent.\n<|scene_desc_end|>`,
+                            text,
+                            "en_man",
+                            null,
+                            null,
+                            1024,
+                            0.8,
+                            0.95,
+                            50,
+                            { headers: ["stops"], data: [["<|end_of_text|>"], ["<|eot_id|>"]], metadata: null },
+                            7,
+                            2,
+                        ],
+                        event_data: null,
+                        fn_index: 2,
+                        session_hash: sessionHash,
+                    }),
+                });
+
+                if (response.ok) {
+                    status.innerHTML += '<br>📡 Request queued. Check browser console for SSE URL.';
+                    console.log(`Listen to SSE at: ${HIGGS_URL}/queue/data?session_hash=${sessionHash}`);
+                }
+            } catch (error) {
+                console.error('Alternative method error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,19 +1,23 @@
 // @ts-nocheck
-import React from 'react';
-import { Box, Typography, Container } from '@mui/material';
+import React, { useState } from 'react';
+import { Box } from '@mui/material';
+import CaptainTomNarrationView from '../components/story/CaptainTomNarrationView';
+import StoryAudioInitializer from '../components/story/StoryAudioInitializer';
 
 const StoryPage: React.FC = () => {
+  const [isAudioReady, setIsAudioReady] = useState(false);
+
   return (
-    <Container>
-      <Box sx={{ py: 4 }}>
-        <Typography variant="h2" gutterBottom>
-          Story Adventure
-        </Typography>
-        <Typography variant="body1">
-          Interactive storytelling experience - Coming Soon!
-        </Typography>
-      </Box>
-    </Container>
+    <Box sx={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
+      {!isAudioReady ? (
+        <StoryAudioInitializer 
+          onReady={() => setIsAudioReady(true)}
+          autoPreload={true}
+        />
+      ) : (
+        <CaptainTomNarrationView />
+      )}
+    </Box>
   );
 };
 

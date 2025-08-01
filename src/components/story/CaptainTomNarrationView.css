@@ -1,0 +1,391 @@
+/**
+ * Captain Tom Narration View Styles
+ * Pulitzer-level visual design for children's storytelling
+ */
+
+.captain-tom-narration-view {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+}
+
+/* Story Canvas Background */
+.story-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Narration Overlay */
+.narration-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.narration-overlay > * {
+  pointer-events: auto;
+}
+
+/* Captain Tom's Ghostly Presence */
+.captain-tom-presence {
+  position: absolute;
+  top: 10%;
+  right: 10%;
+  width: 200px;
+  height: 250px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(100, 200, 255, 0.3) 0%,
+    rgba(100, 200, 255, 0.1) 40%,
+    transparent 70%
+  );
+  filter: blur(20px);
+  mix-blend-mode: screen;
+}
+
+/* Narration Text Container */
+.narration-text {
+  max-width: 80%;
+  margin: 0 auto;
+  padding: 40px;
+  text-align: center;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.6) 50%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 0 40px rgba(100, 200, 255, 0.3),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.narration-text-container {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: clamp(1.2rem, 3vw, 2rem);
+  line-height: 1.8;
+  color: #ffffff;
+  text-shadow: 
+    0 0 10px rgba(100, 200, 255, 0.5),
+    0 0 20px rgba(100, 200, 255, 0.3);
+}
+
+/* Word Animation */
+.narration-word {
+  display: inline-block;
+  margin-right: 0.3em;
+  transition: all 0.3s ease;
+}
+
+.narration-word:hover {
+  color: #66ddff;
+  transform: translateY(-2px);
+  text-shadow: 
+    0 0 15px rgba(100, 200, 255, 0.8),
+    0 0 30px rgba(100, 200, 255, 0.5);
+}
+
+/* Interactive Prompt */
+.interaction-prompt {
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 20, 40, 0.95);
+  padding: 30px 50px;
+  border-radius: 20px;
+  border: 2px solid rgba(100, 200, 255, 0.5);
+  box-shadow: 
+    0 0 30px rgba(100, 200, 255, 0.4),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.interaction-prompt h3 {
+  font-family: 'Comic Sans MS', 'Arial', sans-serif;
+  font-size: 1.5rem;
+  color: #66ddff;
+  margin-bottom: 20px;
+  text-shadow: 0 0 10px rgba(100, 200, 255, 0.8);
+}
+
+/* Interaction Buttons */
+.interaction-prompt button {
+  background: linear-gradient(135deg, #0066cc 0%, #0099ff 100%);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  margin: 10px;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 4px 15px rgba(0, 153, 255, 0.4),
+    inset 0 1px 3px rgba(255, 255, 255, 0.3);
+}
+
+.interaction-prompt button:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 
+    0 8px 25px rgba(0, 153, 255, 0.6),
+    inset 0 1px 3px rgba(255, 255, 255, 0.5);
+}
+
+.interaction-prompt button:active {
+  transform: translateY(-1px);
+}
+
+/* Splash Pattern Selector */
+.splash-pattern-selector {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Kindness Choice */
+.kindness-choice {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+}
+
+/* Ripple Promise Input */
+.ripple-promise input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(100, 200, 255, 0.5);
+  border-radius: 25px;
+  padding: 15px 25px;
+  font-size: 1.1rem;
+  color: white;
+  width: 400px;
+  max-width: 90vw;
+  transition: all 0.3s ease;
+}
+
+.ripple-promise input:focus {
+  outline: none;
+  border-color: #66ddff;
+  box-shadow: 0 0 20px rgba(100, 200, 255, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.ripple-promise input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Progress Indicator */
+.story-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, 
+    #0099ff 0%, 
+    #66ddff 50%, 
+    #99eeff 100%
+  );
+  transition: width 0.3s ease;
+  box-shadow: 
+    0 0 10px rgba(100, 200, 255, 0.8),
+    0 0 20px rgba(100, 200, 255, 0.5);
+}
+
+/* Audio Controls */
+.audio-controls {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.audio-controls button {
+  background: linear-gradient(135deg, #ff6600 0%, #ffaa00 100%);
+  color: white;
+  border: none;
+  padding: 20px 40px;
+  border-radius: 50px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 6px 20px rgba(255, 102, 0, 0.4),
+    inset 0 1px 3px rgba(255, 255, 255, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 
+      0 6px 20px rgba(255, 102, 0, 0.4),
+      inset 0 1px 3px rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 
+      0 8px 30px rgba(255, 102, 0, 0.6),
+      inset 0 1px 3px rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 
+      0 6px 20px rgba(255, 102, 0, 0.4),
+      inset 0 1px 3px rgba(255, 255, 255, 0.3);
+  }
+}
+
+.audio-controls button:hover {
+  animation: none;
+  transform: scale(1.1);
+  box-shadow: 
+    0 10px 30px rgba(255, 102, 0, 0.6),
+    inset 0 1px 3px rgba(255, 255, 255, 0.5);
+}
+
+/* Chapter Indicator */
+.chapter-indicator {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.chapter-indicator h2 {
+  font-family: 'Georgia', serif;
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow: 0 0 10px rgba(100, 200, 255, 0.5);
+  margin: 0;
+}
+
+/* Emotional State Themes */
+.captain-tom-narration-view[data-emotion="wonder"] {
+  --primary-color: #00ccff;
+  --secondary-color: #0099ff;
+  --glow-color: rgba(0, 204, 255, 0.5);
+}
+
+.captain-tom-narration-view[data-emotion="exciting"] {
+  --primary-color: #ff9900;
+  --secondary-color: #ff6600;
+  --glow-color: rgba(255, 153, 0, 0.5);
+}
+
+.captain-tom-narration-view[data-emotion="gentle"] {
+  --primary-color: #99ccff;
+  --secondary-color: #6699cc;
+  --glow-color: rgba(153, 204, 255, 0.5);
+}
+
+.captain-tom-narration-view[data-emotion="mysterious"] {
+  --primary-color: #9966ff;
+  --secondary-color: #6633cc;
+  --glow-color: rgba(153, 102, 255, 0.5);
+}
+
+.captain-tom-narration-view[data-emotion="heartwarming"] {
+  --primary-color: #ff99cc;
+  --secondary-color: #ff6699;
+  --glow-color: rgba(255, 153, 204, 0.5);
+}
+
+.captain-tom-narration-view[data-emotion="bittersweet"] {
+  --primary-color: #cc99ff;
+  --secondary-color: #9966cc;
+  --glow-color: rgba(204, 153, 255, 0.5);
+}
+
+.captain-tom-narration-view[data-emotion="inspiring"] {
+  --primary-color: #00ffcc;
+  --secondary-color: #00cc99;
+  --glow-color: rgba(0, 255, 204, 0.5);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .narration-text {
+    max-width: 95%;
+    padding: 20px;
+  }
+  
+  .narration-text-container {
+    font-size: 1.1rem;
+  }
+  
+  .interaction-prompt {
+    width: 90%;
+    padding: 20px;
+  }
+  
+  .audio-controls button {
+    padding: 15px 30px;
+    font-size: 1.1rem;
+  }
+  
+  .captain-tom-presence {
+    width: 150px;
+    height: 180px;
+    top: 5%;
+    right: 5%;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .narration-word {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .narration-text {
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid white;
+  }
+  
+  .narration-text-container {
+    color: white;
+    text-shadow: none;
+  }
+  
+  button {
+    border: 2px solid white;
+  }
+}
