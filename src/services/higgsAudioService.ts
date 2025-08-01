@@ -10,15 +10,16 @@ class HiggsAudioService {
   async generateOldTomVoice(text: string): Promise<string | null> {
     try {
       // Use the correct API endpoint format
-      const response = await fetch(`${this.baseUrl}/gradio_api/run/generate_speech`, {
+      const response = await fetch(`${this.baseUrl}/run/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          fn_index: 2,
           data: [
             text, // Input text
-            "EMPTY", // Voice preset - EMPTY as shown in example
+            "en_man", // Voice preset - English male voice
             null, // No reference audio
             null, // No reference text
             1024, // Max completion tokens
@@ -73,31 +74,14 @@ Audio is an elderly Australian sea captain, weathered voice, 80 years old, speak
   // Alternative: Direct API call using gradio_client style
   async generateVoiceDirectly(text: string): Promise<string | null> {
     try {
-      // First, get the session hash
-      const sessionResponse = await fetch(`${this.baseUrl}/api/predict/`, {
+      // Make the prediction directly
+      const predictResponse = await fetch(`${this.baseUrl}/run/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           fn_index: 2,
-          session_hash: Math.random().toString(36).substring(7),
-        }),
-      });
-
-      if (!sessionResponse.ok) {
-        throw new Error('Failed to create session');
-      }
-
-      const sessionData = await sessionResponse.json();
-      
-      // Now make the actual prediction
-      const predictResponse = await fetch(`${this.baseUrl}/api/predict/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
           data: [
             text,
             "en_man", // English male voice
@@ -112,9 +96,6 @@ Audio is an elderly Australian sea captain, weathered voice, 80 years old, speak
             7,
             2,
           ],
-          event_data: null,
-          fn_index: 2,
-          session_hash: sessionData.session_hash,
         }),
       });
 
