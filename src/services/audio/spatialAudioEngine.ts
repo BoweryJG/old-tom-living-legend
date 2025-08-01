@@ -792,3 +792,6 @@ export class SpatialAudioEngine {
     );
   }
 }
+
+// Export singleton instance
+export const spatialAudioEngine = new SpatialAudioEngine();

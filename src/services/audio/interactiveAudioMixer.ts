@@ -850,3 +850,6 @@ export class InteractiveAudioMixer {
     };
   }
 }
+
+// Export singleton instance
+export const interactiveAudioMixer = new InteractiveAudioMixer();
