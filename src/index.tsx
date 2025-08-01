@@ -17,16 +17,69 @@ debugDiv.style.cssText = `
   max-width: 400px;
   border: 2px solid red;
 `;
-debugDiv.innerHTML = '<h3>DEBUG PANEL</h3><div id="debug-content">Loading index.tsx...</div>';
+debugDiv.innerHTML = `
+  <h3>DEBUG PANEL</h3>
+  <button id="copy-debug" style="
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    border-radius: 4px;
+  ">COPY LOGS</button>
+  <div id="debug-content" style="
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #444;
+    padding: 10px;
+    margin-top: 10px;
+  ">Loading index.tsx...</div>
+`;
 document.body.appendChild(debugDiv);
 
+// Store all debug messages
+const debugMessages: string[] = [];
+
 function addDebug(message: string) {
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  const fullMessage = `${timestamp} - ${message}`;
+  debugMessages.push(fullMessage);
+  
   const content = document.getElementById('debug-content');
   if (content) {
-    content.innerHTML += `<div>${new Date().toISOString().split('T')[1].split('.')[0]} - ${message}</div>`;
+    content.innerHTML += `<div>${fullMessage}</div>`;
+    content.scrollTop = content.scrollHeight;
   }
   console.log(`DEBUG: ${message}`);
 }
+
+// Add copy functionality
+setTimeout(() => {
+  const copyButton = document.getElementById('copy-debug');
+  if (copyButton) {
+    copyButton.onclick = () => {
+      const text = debugMessages.join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        copyButton.textContent = 'COPIED!';
+        copyButton.style.background = '#2196F3';
+        setTimeout(() => {
+          copyButton.textContent = 'COPY LOGS';
+          copyButton.style.background = '#4CAF50';
+        }, 2000);
+      }).catch(err => {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        copyButton.textContent = 'COPIED!';
+      });
+    };
+  }
+}, 100);
 
 addDebug('index.tsx loaded');
 

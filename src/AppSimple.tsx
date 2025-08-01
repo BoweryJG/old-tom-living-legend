@@ -38,6 +38,26 @@ const AppSimple = () => {
         >
           Reload Page
         </button>
+        
+        <button 
+          onClick={() => {
+            // Try to force load the main App
+            window.location.href = window.location.href + '?forceApp=true';
+          }}
+          style={{
+            marginTop: '10px',
+            marginLeft: '10px',
+            padding: '10px 20px',
+            backgroundColor: '#2196F3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '16px'
+          }}
+        >
+          Try Main App
+        </button>
       </div>
       
       <div style={{ marginTop: '20px' }}>
