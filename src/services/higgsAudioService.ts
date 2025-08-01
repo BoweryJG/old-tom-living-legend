@@ -1,4 +1,6 @@
-// Hugging Face Higgs Audio Service for Old Tom's voice
+// Audio Service Manager - Handles ElevenLabs and fallbacks
+import { elevenLabsService } from './elevenLabsService';
+
 interface HiggsAudioResponse {
   audio_url?: string;
   error?: string;
@@ -10,8 +12,20 @@ class HiggsAudioService {
   async generateOldTomVoice(text: string): Promise<string | null> {
     console.log('🎙️ Starting audio generation for text:', text.substring(0, 50) + '...');
     
-    // Due to CORS restrictions, we'll use a different approach
-    // Option 1: Use a public TTS API that supports CORS
+    // Option 1: Try ElevenLabs first (best quality)
+    try {
+      console.log('🚀 Trying ElevenLabs API...');
+      const elevenLabsAudio = await elevenLabsService.generateOldTomVoice(text);
+      if (elevenLabsAudio) {
+        console.log('✅ ElevenLabs audio generated successfully!');
+        return elevenLabsAudio;
+      }
+    } catch (error) {
+      console.error('❌ ElevenLabs failed:', error);
+    }
+
+    // Option 2: Fallback to Web API approach if ElevenLabs fails
+    console.log('🔄 Falling back to alternative approaches...');
     try {
       const audioBlob = await this.generateWithWebAPI(text);
       if (audioBlob) {
@@ -21,7 +35,7 @@ class HiggsAudioService {
       console.error('❌ Web API approach failed:', error);
     }
 
-    // Option 2: Try the original Higgs approaches (may fail due to CORS)
+    // Option 3: Try the original Higgs approaches (may fail due to CORS)
     const approaches = [
       () => this.tryQueueBasedAPI(text),
       () => this.tryDirectAPI(text),
