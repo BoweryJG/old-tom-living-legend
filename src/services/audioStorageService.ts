@@ -7,10 +7,21 @@ import { createClient } from '@supabase/supabase-js';
 import { higgsAudioService } from './higgsAudioService';
 import { captainTomNarration } from '../content/story/captainTomNarration';
 
-// Initialize Supabase client
+// Initialize Supabase client with error handling
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
 const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Only create client if we have valid credentials
+let supabase: any = null;
+if (supabaseUrl && supabaseKey) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey);
+  } catch (error) {
+    console.error('Failed to create Supabase client:', error);
+  }
+} else {
+  console.warn('Supabase credentials not found - audio storage will be disabled');
+}
 
 const STORAGE_BUCKET = 'old-tom-audio';
 const AUDIO_SCHEMA = 'old_tom';
@@ -33,6 +44,11 @@ class AudioStorageService {
    * Initialize the service - create bucket and table if needed
    */
   async initialize() {
+    if (!supabase) {
+      console.warn('AudioStorageService: Skipping initialization - no Supabase client');
+      return;
+    }
+    
     try {
       // Create storage bucket if it doesn't exist
       const { data: buckets } = await supabase.storage.listBuckets();
