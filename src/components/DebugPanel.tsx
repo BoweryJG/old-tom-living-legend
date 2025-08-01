@@ -58,6 +58,15 @@ const DebugPanel: React.FC = () => {
 
     // Add initial log
     console.log('🐋 Debug panel initialized - Old Tom voice logs will appear here');
+    
+    // Log available voices after a short delay to ensure they're loaded
+    setTimeout(() => {
+      const voices = window.speechSynthesis.getVoices();
+      console.log('🎤 Available TTS voices:', voices.length);
+      voices.forEach((voice, index) => {
+        console.log(`  ${index}: ${voice.name} (${voice.lang}) ${voice.localService ? 'LOCAL' : 'REMOTE'}`);
+      });
+    }, 100);
 
     // Cleanup
     return () => {

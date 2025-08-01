@@ -19,30 +19,84 @@ class WebSpeechService {
         // Cancel any ongoing speech
         this.synthesis.cancel();
 
-        const utterance = new SpeechSynthesisUtterance(text);
+        // Get available voices (may need to wait for them to load)
+        let voices = this.synthesis.getVoices();
         
-        // Configure voice parameters for Old Tom
-        utterance.rate = 0.85; // Slower for elderly character
-        utterance.pitch = 0.7; // Lower pitch for gravelly voice
-        utterance.volume = 1.0;
-        
-        // Try to find an Australian or British English voice
-        const voices = this.synthesis.getVoices();
-        const preferredVoices = voices.filter(voice => 
-          voice.lang.includes('en-AU') || 
-          voice.lang.includes('en-GB') ||
-          voice.name.toLowerCase().includes('male')
-        );
-        
-        if (preferredVoices.length > 0) {
-          utterance.voice = preferredVoices[0];
-        } else if (voices.length > 0) {
-          // Fallback to any available voice
-          utterance.voice = voices.find(v => v.lang.includes('en')) || voices[0];
+        // If voices aren't loaded yet, wait for them
+        if (voices.length === 0) {
+          this.synthesis.addEventListener('voiceschanged', () => {
+            voices = this.synthesis.getVoices();
+          }, { once: true });
         }
 
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Configure voice parameters for Old Tom - weathered sea captain
+        utterance.rate = 0.75; // Much slower - old man speaking deliberately
+        utterance.pitch = 0.5; // Much lower pitch for deep, gravelly voice
+        utterance.volume = 0.9; // Slightly lower volume for aged voice
+        
+        // Voice selection priority for Old Tom
+        const voicePriorities = [
+          // First priority: Australian male voices
+          (v: SpeechSynthesisVoice) => v.lang === 'en-AU' && v.name.toLowerCase().includes('male'),
+          (v: SpeechSynthesisVoice) => v.lang === 'en-AU',
+          
+          // Second priority: British/UK male voices (similar accent)
+          (v: SpeechSynthesisVoice) => v.lang === 'en-GB' && v.name.toLowerCase().includes('male'),
+          (v: SpeechSynthesisVoice) => v.lang === 'en-GB',
+          
+          // Third priority: Any English male voice
+          (v: SpeechSynthesisVoice) => v.lang.startsWith('en') && v.name.toLowerCase().includes('male'),
+          
+          // Fourth priority: Specific voice names that sound good
+          (v: SpeechSynthesisVoice) => ['daniel', 'gordon', 'bruce', 'fred'].some(name => 
+            v.name.toLowerCase().includes(name)
+          ),
+          
+          // Last resort: Any English voice
+          (v: SpeechSynthesisVoice) => v.lang.startsWith('en'),
+        ];
+
+        // Find the best voice based on priorities
+        let selectedVoice: SpeechSynthesisVoice | null = null;
+        for (const priorityCheck of voicePriorities) {
+          selectedVoice = voices.find(priorityCheck) || null;
+          if (selectedVoice) break;
+        }
+
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+          console.log(`🎙️ Selected voice: ${selectedVoice.name} (${selectedVoice.lang})`);
+          
+          // Adjust parameters based on specific voices
+          if (selectedVoice.name.toLowerCase().includes('daniel')) {
+            utterance.pitch = 0.4; // Daniel voice sounds better even lower
+          } else if (selectedVoice.name.toLowerCase().includes('karen')) {
+            utterance.pitch = 0.3; // Female voices need much lower pitch
+            utterance.rate = 0.7;
+          }
+        } else if (voices.length > 0) {
+          // Absolute fallback
+          utterance.voice = voices[0];
+          console.log(`🎙️ Fallback voice: ${voices[0].name}`);
+        }
+
+        // Add pauses for more natural elderly speech
+        // Replace periods with longer pauses
+        const modifiedText = text
+          .replace(/\. /g, '... ')
+          .replace(/\, /g, ', ... ')
+          .replace(/Old Tom/g, 'Old Tom... ');
+
+        utterance.text = modifiedText;
+
+        utterance.onstart = () => {
+          console.log('🗣️ Old Tom begins to speak...');
+        };
+
         utterance.onend = () => {
-          console.log('✅ Web Speech playback completed');
+          console.log('✅ Old Tom finished speaking');
           resolve();
         };
 
@@ -51,7 +105,13 @@ class WebSpeechService {
           reject(event);
         };
 
-        console.log('🗣️ Starting Web Speech synthesis...');
+        console.log('🎤 Voice parameters:', {
+          rate: utterance.rate,
+          pitch: utterance.pitch,
+          volume: utterance.volume,
+          voice: utterance.voice?.name || 'default'
+        });
+
         this.synthesis.speak(utterance);
       } catch (error) {
         console.error('Error in Web Speech synthesis:', error);
@@ -69,6 +129,15 @@ class WebSpeechService {
   // Get available voices for debugging
   getVoices(): SpeechSynthesisVoice[] {
     return this.synthesis.getVoices();
+  }
+
+  // Log all available voices to console
+  logAvailableVoices(): void {
+    const voices = this.synthesis.getVoices();
+    console.log('🎤 Available voices:', voices.length);
+    voices.forEach((voice, index) => {
+      console.log(`${index}: ${voice.name} (${voice.lang}) ${voice.localService ? 'LOCAL' : 'REMOTE'}`);
+    });
   }
 }
 
