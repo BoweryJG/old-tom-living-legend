@@ -140,11 +140,13 @@ class AudioVisualSyncService {
     const keyframes: VisualKeyframe[] = [];
     
     // Opening keyframe
+    // Use chapter as scene identifier since NarrationSegment doesn't have scene property
+    const sceneId = segment.chapter.toLowerCase().replace(/\s+/g, '_');
     keyframes.push({
       time: 0,
-      scene: segment.scene,
-      cameraPosition: this.getSceneCamera(segment.scene).position,
-      cameraTarget: this.getSceneCamera(segment.scene).target,
+      scene: sceneId,
+      cameraPosition: this.getSceneCamera(sceneId).position,
+      cameraTarget: this.getSceneCamera(sceneId).target,
       emotion: segment.emotionalTone
     });
 
@@ -190,7 +192,7 @@ class AudioVisualSyncService {
     const tracks: AudioTrack[] = [];
 
     // Ocean ambience
-    if (segment.soundscape.includes('ocean waves') || segment.scene.includes('underwater')) {
+    if (segment.soundscape.includes('ocean waves') || segment.chapter.toLowerCase().includes('underwater')) {
       tracks.push({
         id: 'ocean-ambience',
         url: '/assets/audio/ambience/ocean-waves-gentle.mp3',
@@ -258,33 +260,33 @@ class AudioVisualSyncService {
       });
     });
 
-    // Emotional beats
-    if (segment.emotionalBeat) {
-      const emotionalMoments = emotionalAIService.detectEmotionalMoments(segment.text);
-      emotionalMoments.forEach((moment, index) => {
-        events.push({
-          id: `emotion-${index}`,
-          timestamp: (duration * moment.position) / segment.text.length,
-          type: 'emotion',
-          action: 'emotional-response',
-          data: { emotion: moment.emotion, intensity: moment.intensity }
-        });
-      });
-    }
+    // Emotional beats - commented out as emotionalAIService doesn't have detectEmotionalMoments method
+    // TODO: Implement emotional moment detection or use existing emotionalAIService methods
+    // const emotionalMoments = emotionalAIService.detectEmotionalMoments(segment.text);
+    // emotionalMoments.forEach((moment, index) => {
+    //   events.push({
+    //     id: `emotion-${index}`,
+    //     timestamp: (duration * moment.position) / segment.text.length,
+    //     type: 'emotion',
+    //     action: 'emotional-response',
+    //     data: { emotion: moment.emotion, intensity: moment.intensity }
+    //   });
+    // });
 
-    // Interactive moments
-    if (segment.interactiveMoment) {
-      events.push({
-        id: 'interaction-prompt',
-        timestamp: duration * 0.8,
-        type: 'interaction',
-        action: 'show-interaction',
-        data: { 
-          type: segment.interactiveMoment,
-          prompt: this.getInteractionPrompt(segment.interactiveMoment)
-        }
-      });
-    }
+    // Interactive moments - commented out as NarrationSegment doesn't have interactiveMoment property
+    // TODO: Add interactive moment support if needed
+    // if (segment.interactiveMoment) {
+    //   events.push({
+    //     id: 'interaction-prompt',
+    //     timestamp: duration * 0.8,
+    //     type: 'interaction',
+    //     action: 'show-interaction',
+    //     data: { 
+    //       type: segment.interactiveMoment,
+    //       prompt: this.getInteractionPrompt(segment.interactiveMoment)
+    //     }
+    //   });
+    // }
 
     return events;
   }
@@ -446,6 +448,8 @@ class AudioVisualSyncService {
 
     // Schedule fade out
     if (track.fadeOut) {
+      const fadeOutDuration = track.fadeOut;
+      const fadeOutStartTime = (track.duration - fadeOutDuration) * 1000;
       setTimeout(() => {
         const fadeOutInterval = setInterval(() => {
           if (audio.volume > 0) {
@@ -453,16 +457,21 @@ class AudioVisualSyncService {
           } else {
             clearInterval(fadeOutInterval);
           }
-        }, track.fadeOut * 1000 / 20);
-      }, (track.duration - track.fadeOut) * 1000);
+        }, fadeOutDuration * 1000 / 20);
+      }, fadeOutStartTime);
     }
 
     // Apply spatial audio if specified
-    if (track.spatial && spatialAudioEngine.isInitialized()) {
-      await spatialAudioEngine.loadAndPositionSound(
+    if (track.spatial) {
+      const position = {
+        x: track.spatial.position[0],
+        y: track.spatial.position[1],
+        z: track.spatial.position[2]
+      };
+      await spatialAudioEngine.createSource(
         track.id,
         track.url,
-        track.spatial.position,
+        position,
         { volume: track.volume, maxDistance: track.spatial.maxDistance }
       );
       spatialAudioEngine.playSource(track.id);
@@ -662,7 +671,13 @@ class AudioVisualSyncService {
   private handleEmotionalStateChange(detail: any): void {
     // Update audio mixing based on emotional state
     if (this.isPlaying && detail.emotion) {
-      interactiveAudioMixer.transitionToEmotion(detail.emotion);
+      interactiveAudioMixer.updateEmotionalState({
+        primary: detail.emotion,
+        intensity: detail.intensity || 0.5,
+        confidence: 0.8,
+        timestamp: Date.now(),
+        context: 'visual-sync-event'
+      });
     }
   }
 

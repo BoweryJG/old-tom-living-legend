@@ -6,7 +6,8 @@
  */
 
 import { OrchestralComposer, MusicalTheme } from './orchestralComposer';
-import { SpatialAudioEngine, SpatialAudioSource, Vector3D } from './spatialAudioEngine';
+import { spatialAudioEngine } from './spatialAudioEngine';
+import type { SpatialAudioEngine, SpatialAudioSource, Vector3D } from './spatialAudioEngine';
 
 export interface EmotionalState {
   primary: string; // happiness, sadness, excitement, wonder, calm, etc.
@@ -851,5 +852,39 @@ export class InteractiveAudioMixer {
   }
 }
 
-// Export singleton instance
-export const interactiveAudioMixer = new InteractiveAudioMixer();
+// Create audio context lazily
+let audioContext: AudioContext | null = null;
+const getAudioContext = (): AudioContext => {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  return audioContext;
+};
+
+// Create orchestral composer instance lazily
+let orchestralComposerInstance: OrchestralComposer | null = null;
+const getOrchestralComposer = (): OrchestralComposer => {
+  if (!orchestralComposerInstance) {
+    orchestralComposerInstance = new OrchestralComposer(getAudioContext());
+  }
+  return orchestralComposerInstance;
+};
+
+// Create singleton factory function that initializes dependencies
+class InteractiveAudioMixerSingleton {
+  private static instance: InteractiveAudioMixer | null = null;
+
+  static getInstance(): InteractiveAudioMixer {
+    if (!this.instance) {
+      this.instance = new InteractiveAudioMixer(
+        getOrchestralComposer(),
+        spatialAudioEngine as any, // Cast to any to avoid circular dependency type issues
+        getAudioContext()
+      );
+    }
+    return this.instance;
+  }
+}
+
+// Export singleton instance getter
+export const interactiveAudioMixer = InteractiveAudioMixerSingleton.getInstance();

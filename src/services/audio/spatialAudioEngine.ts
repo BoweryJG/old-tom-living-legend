@@ -793,5 +793,22 @@ export class SpatialAudioEngine {
   }
 }
 
-// Export singleton instance
-export const spatialAudioEngine = new SpatialAudioEngine();
+// Create audio context lazily
+let audioContext: AudioContext | null = null;
+const getAudioContext = (): AudioContext => {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  return audioContext;
+};
+
+// Create singleton instance lazily
+let spatialAudioEngineInstance: SpatialAudioEngine | null = null;
+
+// Export singleton instance getter
+export const spatialAudioEngine = (() => {
+  if (!spatialAudioEngineInstance) {
+    spatialAudioEngineInstance = new SpatialAudioEngine(getAudioContext());
+  }
+  return spatialAudioEngineInstance;
+})();
