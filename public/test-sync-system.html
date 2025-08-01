@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio-Visual Sync System Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a1628;
+            color: #e8f1ff;
+        }
+        .container {
+            background: #1a2332;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #4a90e2;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        #status {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .visual-preview {
+            width: 100%;
+            height: 400px;
+            background: #000;
+            border: 2px solid #4a90e2;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .visual-element {
+            position: absolute;
+            transition: all 0.5s ease;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a90e2 0%, #4fc3f7 100%);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        .sync-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background: #666;
+        }
+        .sync-indicator.synced {
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+        .keyframe-info {
+            background: rgba(74, 144, 226, 0.2);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        audio {
+            width: 100%;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌊 Audio-Visual Synchronization Test</h1>
+        
+        <div class="test-section">
+            <h2>System Status</h2>
+            <p><span class="sync-indicator" id="syncIndicator"></span><span id="syncStatus">Not initialized</span></p>
+            <div id="status">Waiting to initialize...</div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Story Segment Control</h2>
+            <select id="segmentSelect">
+                <option value="">Select a segment...</option>
+            </select>
+            <button onclick="loadSegment()">Load Segment</button>
+            <button onclick="playSegment()" id="playBtn" disabled>▶️ Play</button>
+            <button onclick="pauseSegment()" id="pauseBtn" disabled>⏸️ Pause</button>
+            <button onclick="stopSegment()" id="stopBtn" disabled>⏹️ Stop</button>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div id="timeDisplay">0:00 / 0:00</div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Visual Preview</h2>
+            <div class="visual-preview" id="visualPreview">
+                <div class="visual-element" id="whaleElement" style="
+                    width: 100px;
+                    height: 50px;
+                    background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%);
+                    border-radius: 50%;
+                    top: 200px;
+                    left: 50px;
+                    box-shadow: 0 4px 20px rgba(57, 73, 171, 0.5);
+                "></div>
+                <div class="visual-element" id="captainElement" style="
+                    width: 60px;
+                    height: 80px;
+                    background: linear-gradient(135deg, #8d6e63 0%, #5d4037 100%);
+                    border-radius: 10px;
+                    top: 150px;
+                    right: 100px;
+                    box-shadow: 0 4px 20px rgba(93, 64, 55, 0.5);
+                "></div>
+            </div>
+            <div class="keyframe-info" id="keyframeInfo">
+                <strong>Current Keyframe:</strong> None
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Audio Tracks</h2>
+            <div id="audioTracks"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Sync Events Log</h2>
+            <div id="eventLog" style="max-height: 200px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <script type="module">
+    // Import services
+    import { audioVisualSyncService } from '../src/services/audioVisualSyncService.js';
+    import { storyIntegrationService } from '../src/services/storyIntegrationService.js';
+    import { captainTomNarration } from '../src/content/story/captainTomNarration.js';
+    
+    let currentSyncedSegment = null;
+    let eventLogCount = 0;
+    
+    // Initialize UI
+    async function initialize() {
+        updateStatus('Initializing...');
+        
+        // Populate segment selector
+        const select = document.getElementById('segmentSelect');
+        captainTomNarration.forEach(segment => {
+            const option = document.createElement('option');
+            option.value = segment.id;
+            option.textContent = `${segment.id} - ${segment.chapter}`;
+            select.appendChild(option);
+        });
+        
+        // Initialize story integration
+        await storyIntegrationService.initializeStory();
+        
+        // Register callbacks
+        audioVisualSyncService.registerVisualCallback('test-page', handleVisualKeyframe);
+        audioVisualSyncService.registerSyncEventCallback('test-page', handleSyncEvent);
+        
+        // Listen for events
+        window.addEventListener('audioVisualTimeUpdate', handleTimeUpdate);
+        window.addEventListener('audioVisualPlaybackStarted', handlePlaybackStarted);
+        window.addEventListener('audioVisualPlaybackPaused', handlePlaybackPaused);
+        window.addEventListener('audioVisualPlaybackStopped', handlePlaybackStopped);
+        window.addEventListener('segmentComplete', handleSegmentComplete);
+        
+        updateStatus('System initialized. Select a segment to begin.');
+        updateSyncStatus('Ready', false);
+    }
+    
+    window.loadSegment = async function() {
+        const segmentId = document.getElementById('segmentSelect').value;
+        if (!segmentId) {
+            updateStatus('Please select a segment first.');
+            return;
+        }
+        
+        updateStatus(`Loading segment: ${segmentId}...`);
+        updateSyncStatus('Syncing...', false);
+        
+        try {
+            currentSyncedSegment = await audioVisualSyncService.prepareSegment(segmentId);
+            
+            // Display audio tracks
+            displayAudioTracks(currentSyncedSegment);
+            
+            // Enable playback controls
+            document.getElementById('playBtn').disabled = false;
+            
+            updateStatus(`Segment loaded successfully!\nTotal duration: ${currentSyncedSegment.totalDuration.toFixed(2)}s`);
+            updateSyncStatus('Synced', true);
+            
+        } catch (error) {
+            updateStatus(`Error loading segment: ${error.message}`);
+            updateSyncStatus('Error', false);
+        }
+    };
+    
+    window.playSegment = async function() {
+        if (!currentSyncedSegment) return;
+        
+        updateStatus('Starting playback...');
+        await audioVisualSyncService.play(currentSyncedSegment);
+        
+        document.getElementById('playBtn').disabled = true;
+        document.getElementById('pauseBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = false;
+    };
+    
+    window.pauseSegment = function() {
+        audioVisualSyncService.pause();
+        
+        document.getElementById('playBtn').disabled = false;
+        document.getElementById('pauseBtn').disabled = true;
+    };
+    
+    window.stopSegment = function() {
+        audioVisualSyncService.stop();
+        
+        document.getElementById('playBtn').disabled = false;
+        document.getElementById('pauseBtn').disabled = true;
+        document.getElementById('stopBtn').disabled = true;
+        
+        // Reset progress
+        document.getElementById('progressFill').style.width = '0%';
+        document.getElementById('timeDisplay').textContent = '0:00 / 0:00';
+    };
+    
+    function handleVisualKeyframe(keyframe) {
+        const info = document.getElementById('keyframeInfo');
+        info.innerHTML = `
+            <strong>Current Keyframe:</strong> ${keyframe.time.toFixed(2)}s<br>
+            ${keyframe.scene ? `Scene: ${keyframe.scene}<br>` : ''}
+            ${keyframe.emotion ? `Emotion: ${keyframe.emotion}<br>` : ''}
+            ${keyframe.effects ? `Effects: ${keyframe.effects.join(', ')}<br>` : ''}
+            ${keyframe.cameraPosition ? `Camera: [${keyframe.cameraPosition.join(', ')}]` : ''}
+        `;
+        
+        // Animate visual elements based on keyframe
+        if (keyframe.cameraPosition) {
+            animateCamera(keyframe.cameraPosition);
+        }
+        if (keyframe.emotion) {
+            updateVisualMood(keyframe.emotion);
+        }
+    }
+    
+    function handleSyncEvent(event) {
+        logEvent(`${event.type}: ${event.action}`, event.data);
+        
+        // Handle specific event types
+        if (event.type === 'visual' && event.action === 'trigger-effect') {
+            triggerVisualEffect(event.data.effect);
+        }
+    }
+    
+    function handleTimeUpdate(event) {
+        const { currentTime, totalDuration, progress } = event.detail;
+        
+        // Update progress bar
+        document.getElementById('progressFill').style.width = `${progress * 100}%`;
+        
+        // Update time display
+        const current = formatTime(currentTime);
+        const total = formatTime(totalDuration);
+        document.getElementById('timeDisplay').textContent = `${current} / ${total}`;
+    }
+    
+    function handlePlaybackStarted() {
+        updateStatus('Playback started');
+        logEvent('Playback', 'Started');
+    }
+    
+    function handlePlaybackPaused() {
+        updateStatus('Playback paused');
+        logEvent('Playback', 'Paused');
+    }
+    
+    function handlePlaybackStopped() {
+        updateStatus('Playback stopped');
+        logEvent('Playback', 'Stopped');
+    }
+    
+    function handleSegmentComplete(event) {
+        updateStatus(`Segment complete: ${event.detail.segmentId}`);
+        logEvent('Segment', 'Complete', event.detail);
+    }
+    
+    function displayAudioTracks(segment) {
+        const container = document.getElementById('audioTracks');
+        container.innerHTML = '';
+        
+        // Narration track
+        const narrationDiv = document.createElement('div');
+        narrationDiv.innerHTML = `
+            <h4>Narration</h4>
+            <audio controls src="${segment.narrationTrack.url}"></audio>
+            <p>Duration: ${segment.narrationTrack.duration.toFixed(2)}s, Volume: ${segment.narrationTrack.volume}</p>
+        `;
+        container.appendChild(narrationDiv);
+        
+        // Background tracks
+        if (segment.backgroundTracks.length > 0) {
+            const bgDiv = document.createElement('div');
+            bgDiv.innerHTML = '<h4>Background Tracks</h4>';
+            segment.backgroundTracks.forEach(track => {
+                const trackInfo = document.createElement('p');
+                trackInfo.textContent = `${track.id}: ${track.duration.toFixed(2)}s @ volume ${track.volume}`;
+                bgDiv.appendChild(trackInfo);
+            });
+            container.appendChild(bgDiv);
+        }
+    }
+    
+    function animateCamera(position) {
+        // Simulate camera movement with element positions
+        const whale = document.getElementById('whaleElement');
+        const captain = document.getElementById('captainElement');
+        
+        const x = position[0];
+        const z = position[2];
+        
+        whale.style.transform = `translateX(${x * 5}px) scale(${1 + z * 0.01})`;
+        captain.style.transform = `translateX(${-x * 3}px) scale(${1 + z * 0.01})`;
+    }
+    
+    function updateVisualMood(emotion) {
+        const preview = document.getElementById('visualPreview');
+        const colors = {
+            'wonder': 'linear-gradient(135deg, #1a237e 0%, #7e57c2 100%)',
+            'exciting': 'linear-gradient(135deg, #ff6f00 0%, #ffd54f 100%)',
+            'gentle': 'linear-gradient(135deg, #006064 0%, #4dd0e1 100%)',
+            'mysterious': 'linear-gradient(135deg, #263238 0%, #546e7a 100%)',
+            'heartwarming': 'linear-gradient(135deg, #d81b60 0%, #f8bbd0 100%)',
+            'bittersweet': 'linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%)',
+            'inspiring': 'linear-gradient(135deg, #0d47a1 0%, #42a5f5 100%)'
+        };
+        
+        preview.style.background = colors[emotion] || colors['wonder'];
+    }
+    
+    function triggerVisualEffect(effect) {
+        const preview = document.getElementById('visualPreview');
+        preview.style.animation = 'flash 0.5s ease';
+        setTimeout(() => {
+            preview.style.animation = '';
+        }, 500);
+    }
+    
+    function updateStatus(message) {
+        document.getElementById('status').textContent = message;
+    }
+    
+    function updateSyncStatus(status, synced) {
+        document.getElementById('syncStatus').textContent = status;
+        const indicator = document.getElementById('syncIndicator');
+        indicator.className = synced ? 'sync-indicator synced' : 'sync-indicator';
+    }
+    
+    function logEvent(type, data, extra = null) {
+        const log = document.getElementById('eventLog');
+        const entry = document.createElement('div');
+        entry.style.padding = '5px';
+        entry.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+        entry.innerHTML = `
+            <strong>[${new Date().toLocaleTimeString()}] ${type}:</strong> ${data}
+            ${extra ? `<br><small>${JSON.stringify(extra)}</small>` : ''}
+        `;
+        log.insertBefore(entry, log.firstChild);
+        
+        // Limit log entries
+        if (++eventLogCount > 50) {
+            log.removeChild(log.lastChild);
+        }
+    }
+    
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    // Add flash animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes flash {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(1.5); }
+            100% { filter: brightness(1); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Initialize on load
+    initialize();
+    </script>
+</body>
+</html>
