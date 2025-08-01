@@ -32,9 +32,9 @@ class WebSpeechService {
         const utterance = new SpeechSynthesisUtterance(text);
         
         // Configure voice parameters for Old Tom - weathered sea captain
-        utterance.rate = 0.75; // Much slower - old man speaking deliberately
-        utterance.pitch = 0.5; // Much lower pitch for deep, gravelly voice
-        utterance.volume = 0.9; // Slightly lower volume for aged voice
+        utterance.rate = 0.65; // Even slower for ancient mariner
+        utterance.pitch = 0.3; // Very deep, gravelly voice
+        utterance.volume = 0.85; // Slightly lower volume for aged voice
         
         // Voice selection priority for Old Tom
         const voicePriorities = [
@@ -71,10 +71,14 @@ class WebSpeechService {
           
           // Adjust parameters based on specific voices
           if (selectedVoice.name.toLowerCase().includes('daniel')) {
-            utterance.pitch = 0.4; // Daniel voice sounds better even lower
+            utterance.pitch = 0.25; // Daniel voice sounds better even lower
+            utterance.rate = 0.6;
           } else if (selectedVoice.name.toLowerCase().includes('karen')) {
-            utterance.pitch = 0.3; // Female voices need much lower pitch
-            utterance.rate = 0.7;
+            utterance.pitch = 0.2; // Female voices need much lower pitch
+            utterance.rate = 0.55;
+          } else if (selectedVoice.name.toLowerCase().includes('alex')) {
+            utterance.pitch = 0.25;
+            utterance.rate = 0.6;
           }
         } else if (voices.length > 0) {
           // Absolute fallback
@@ -82,12 +86,17 @@ class WebSpeechService {
           console.log(`🎙️ Fallback voice: ${voices[0].name}`);
         }
 
-        // Add pauses for more natural elderly speech
-        // Replace periods with longer pauses
+        // Add more dramatic pauses and speech patterns
         const modifiedText = text
-          .replace(/\. /g, '... ')
+          .replace(/\. /g, '... ... ')
           .replace(/\, /g, ', ... ')
-          .replace(/Old Tom/g, 'Old Tom... ');
+          .replace(/Old Tom/g, '... Old Tom... ')
+          .replace(/years/g, 'years... ')
+          .replace(/whale/gi, '... whale... ')
+          .replace(/sea/gi, '... sea... ')
+          .replace(/Eden/g, '... Eden... ')
+          .replace(/! /g, '! ... ... ')
+          .replace(/\? /g, '? ... ... ');
 
         utterance.text = modifiedText;
 

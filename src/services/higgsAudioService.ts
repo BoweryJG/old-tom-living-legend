@@ -12,17 +12,17 @@ class HiggsAudioService {
   async generateOldTomVoice(text: string): Promise<string | null> {
     console.log('🎙️ Starting audio generation for text:', text.substring(0, 50) + '...');
     
-    // Option 1: Try ElevenLabs first (best quality)
-    try {
-      console.log('🚀 Trying ElevenLabs API...');
-      const elevenLabsAudio = await elevenLabsService.generateOldTomVoice(text);
-      if (elevenLabsAudio) {
-        console.log('✅ ElevenLabs audio generated successfully!');
-        return elevenLabsAudio;
-      }
-    } catch (error) {
-      console.error('❌ ElevenLabs failed:', error);
-    }
+    // Option 1: Skip ElevenLabs for now (too expensive)
+    // try {
+    //   console.log('🚀 Trying ElevenLabs API...');
+    //   const elevenLabsAudio = await elevenLabsService.generateOldTomVoice(text);
+    //   if (elevenLabsAudio) {
+    //     console.log('✅ ElevenLabs audio generated successfully!');
+    //     return elevenLabsAudio;
+    //   }
+    // } catch (error) {
+    //   console.error('❌ ElevenLabs failed:', error);
+    // }
 
     // Option 2: Fallback to Web API approach if ElevenLabs fails
     console.log('🔄 Falling back to alternative approaches...');
