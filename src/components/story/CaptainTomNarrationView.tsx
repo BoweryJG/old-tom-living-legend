@@ -9,6 +9,8 @@ import { Canvas } from '@react-three/fiber';
 import { storyIntegrationService } from '../../services/storyIntegrationService';
 import { captainTomNarration, interactiveMoments } from '../../content/story/captainTomNarration';
 import OceanParticles from '../OceanParticles';
+import { IconicOpeningSequence } from './IconicOpeningSequence';
+import { StudioGhibliSceneEngine } from './StudioGhibliSceneEngine';
 import './CaptainTomNarrationView.css';
 
 interface VisualEffect {
@@ -18,6 +20,7 @@ interface VisualEffect {
 }
 
 const CaptainTomNarrationView: React.FC = () => {
+  const [showOpening, setShowOpening] = useState(true);
   const [currentSegment, setCurrentSegment] = useState<any>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -240,7 +243,7 @@ const CaptainTomNarrationView: React.FC = () => {
     return (
       <div className="narration-text-container" ref={textRef}>
         <AnimatePresence>
-          {words.map((word, index) => (
+          {words.map((word: string, index: number) => (
             <motion.span
               key={`${currentSegment.id}_word_${index}`}
               className="narration-word"
@@ -304,28 +307,28 @@ const CaptainTomNarrationView: React.FC = () => {
     );
   };
 
+  const handleOpeningComplete = () => {
+    setShowOpening(false);
+    // Start the first segment
+    if (captainTomNarration.length > 0) {
+      setCurrentSegment(captainTomNarration[0]);
+    }
+  };
+
+  if (showOpening) {
+    return <IconicOpeningSequence onComplete={handleOpeningComplete} />;
+  }
+
   return (
     <div className="captain-tom-narration-view">
-      {/* Background Canvas with Effects */}
-      <Canvas 
-        ref={canvasRef}
-        className="story-canvas"
-        camera={{ position: [0, 0, 5], fov: 75 }}
-      >
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} intensity={emotionalState === 'exciting' ? 1.5 : 1} />
-        
-        {/* Ocean particles with emotional response */}
-        <OceanParticles 
-          count={emotionalState === 'wonder' ? 5000 : 3000}
-          color={emotionalState === 'heartwarming' ? '#ff9999' : '#00ccff'}
+      {/* Studio Ghibli Scene Engine */}
+      {currentSegment && (
+        <StudioGhibliSceneEngine
+          segment={currentSegment}
+          emotionalState={emotionalState}
+          onSceneReady={() => console.log('Scene ready for:', currentSegment.id)}
         />
-        
-        {/* Dynamic visual effects */}
-        {visualEffects.map(effect => (
-          <VisualEffectRenderer key={effect.id} effect={effect} />
-        ))}
-      </Canvas>
+      )}
 
       {/* Narration Overlay */}
       <div className="narration-overlay">
@@ -373,7 +376,7 @@ const CaptainTomNarrationView: React.FC = () => {
         {/* Hidden audio element */}
         <audio
           ref={audioRef}
-          src={audioUrl || undefined}
+          src={audioUrl ?? undefined}
           onTimeUpdate={(e) => {
             const audio = e.currentTarget;
             setProgress((audio.currentTime / audio.duration) * 100);

@@ -44,7 +44,7 @@ export const captainTomNarration: NarrationSegment[] = [
     id: 'chapter1_young_tom',
     chapter: 'the_angry_ocean',
     text: `In those wild waters lived a young orca - that's a killer whale, but don't let the name fool you. This particular whale was different. While his pod chased fish and stayed away from boats, he would float near the surface, watching the humans with curious eyes. The other whales thought he was bonkers! "Stay away from those land creatures," they'd warn. But this young whale - who would one day be known as Old Tom - he wondered. He dreamed. He dared to think differently.`,
-    visualDescription: 'Underwater shot of a young orca silhouetted against sunbeams. Other whales swim away while he rises toward a boat's shadow above. His eye sparkles with intelligence and curiosity.',
+    visualDescription: 'Underwater shot of a young orca silhouetted against sunbeams. Other whales swim away while he rises toward a boat\'s shadow above. His eye sparkles with intelligence and curiosity.',
     emotionalTone: 'gentle',
     soundscape: ['underwater_ambience', 'whale_pod_chatter', 'curious_whale_clicks', 'muffled_boat_sounds'],
     specialEffects: ['god_rays_underwater', 'bubble_trails', 'dream_sequence_overlay']
@@ -65,7 +65,7 @@ export const captainTomNarration: NarrationSegment[] = [
     id: 'chapter2_the_moment',
     chapter: 'georges_first_fish',
     text: `Then came THE moment. The moment that would ripple through time like a stone thrown in still water. I had caught a fish for dinner, but as I held it, I saw that curious young whale watching me. Our eyes met across the impossible divide between land and sea. And I did something that would have made my mates think I'd gone completely mad. I threw the fish to the whale. Not at him, mind you - TO him. Like you'd toss a ball to a friend.`,
-    visualDescription: 'Slow motion shot of the fish arcing through the air, sunlight making it gleam like silver. The whale's eye widens. Time seems to stop. The fish creates ripples as it hits the water.',
+    visualDescription: 'Slow motion shot of the fish arcing through the air, sunlight making it gleam like silver. The whale\'s eye widens. Time seems to stop. The fish creates ripples as it hits the water.',
     emotionalTone: 'exciting',
     soundscape: ['heartbeat_slowmo', 'fish_splash', 'gasp_of_wonder', 'time_suspension_effect'],
     specialEffects: ['time_freeze_effect', 'ripple_visualization_expanding', 'light_trail_following_fish']
@@ -86,7 +86,7 @@ export const captainTomNarration: NarrationSegment[] = [
     id: 'chapter3_communication',
     chapter: 'old_toms_signal',
     text: `Day after day, Tom and I met at the boundary between two worlds. But how do you talk to someone who doesn't speak your language? Tom figured it out - he'd slap his mighty tail on the water. SPLASH! One slap meant "hello friend!" Two slaps meant "whales coming into the bay!" Three meant "storm coming, be careful!" We created our own language, proving that when hearts want to connect, they'll find a way.`,
-    visualDescription: 'Montage of Tom's tail creating different splash patterns, each splash sending up water droplets that form shapes - a smile, a fish, storm clouds. George on deck taking notes, learning.',
+    visualDescription: 'Montage of Tom\'s tail creating different splash patterns, each splash sending up water droplets that form shapes - a smile, a fish, storm clouds. George on deck taking notes, learning.',
     emotionalTone: 'heartwarming',
     soundscape: ['tail_splashes_rhythmic', 'george_laughter', 'pencil_writing', 'building_music'],
     specialEffects: ['water_sculpture_formations', 'translation_overlay', 'friendship_montage']
@@ -107,7 +107,7 @@ export const captainTomNarration: NarrationSegment[] = [
     id: 'chapter4_working_together',
     chapter: 'the_great_partnership',
     text: `Tom and his pod began helping the Davidsons in the most extraordinary way. When Tom spotted whales that were already dying or very old, he'd guide the boats to them. The whalers got what they needed without hurting healthy whales, and Tom's family got to share in the food. It wasn't taking - it was sharing. It wasn't fighting - it was dancing. Together, they rewrote the rules of the ocean.`,
-    visualDescription: 'Cinematic shot of Tom's pod and whaling boats moving in synchronized formation, like a choreographed dance. The ocean sparkles with mutual respect.',
+    visualDescription: 'Cinematic shot of Tom\'s pod and whaling boats moving in synchronized formation, like a choreographed dance. The ocean sparkles with mutual respect.',
     emotionalTone: 'exciting',
     soundscape: ['triumphant_music', 'synchronized_splashing', 'cooperative_calls', 'harmony_theme'],
     specialEffects: ['synchronized_movement_trails', 'partnership_glow', 'formation_patterns']
@@ -138,7 +138,7 @@ export const captainTomNarration: NarrationSegment[] = [
     id: 'chapter5_tom_leaves',
     chapter: 'the_broken_promise',
     text: `Tom's great heart was hurt that day. He looked at me with those wise eyes, pain visible even from the boat. Those missing teeth... they told a story of betrayal. But you know what? Tom didn't leave. He was hurt, but he didn't abandon us completely. He became more careful, more distant. The easy friendship we'd shared... it was different now. Logan felt terrible about what he'd done - the guilt ate at him every day.`,
-    visualDescription: 'Heartbreaking scene of Tom's last look at George. Tom's pod disappearing into dark waters. George standing alone on empty ocean, calling out with no answer.',
+    visualDescription: 'Heartbreaking scene of Tom\'s last look at George. Tom\'s pod disappearing into dark waters. George standing alone on empty ocean, calling out with no answer.',
     emotionalTone: 'bittersweet',
     soundscape: ['sorrowful_violin', 'fading_whale_songs', 'george_calling', 'empty_ocean'],
     specialEffects: ['fading_into_darkness', 'broken_heart_visualization', 'empty_horizon']
@@ -159,7 +159,7 @@ export const captainTomNarration: NarrationSegment[] = [
     id: 'chapter6_final_respect',
     chapter: 'the_last_gift',
     text: `But here's the remarkable thing - Logan, the man who'd hurt Tom, he couldn't live with his guilt. He paid for Tom's skeleton to be preserved. He said it was the least he could do. He even funded a small museum to protect it. Can you imagine? The man who'd broken trust trying to make amends, even after death. It showed that people can change, that guilt can lead to good deeds. Tom's body would teach future generations.`,
-    visualDescription: 'Close-up of Tom's wise, ancient eye, a tear seeming to form. His worn teeth visible as he sings. The crowd watches in awe as he pays his respects.',
+    visualDescription: 'Close-up of Tom\'s wise, ancient eye, a tear seeming to form. His worn teeth visible as he sings. The crowd watches in awe as he pays his respects.',
     emotionalTone: 'heartwarming',
     soundscape: ['deep_whale_lament', 'crying_crowd', 'wind_through_flags', 'respectful_silence'],
     specialEffects: ['tear_from_whale_eye', 'sound_waves_visible', 'spiritual_connection']
@@ -170,7 +170,7 @@ export const captainTomNarration: NarrationSegment[] = [
     id: 'chapter7_museum',
     chapter: 'the_eternal_story',
     text: `Today, you can visit the Eden Killer Whale Museum and see Old Tom. Look closely at his teeth - worn down to stumps from all those years of helping, of pulling ropes to guide our boats. Every worn tooth tells a story of partnership. Every missing tooth from Logan's boat speaks of how fragile trust can be. But Tom's skeleton stands tall, 22 feet of proof that the impossible is possible when we choose understanding over fear.`,
-    visualDescription: 'Museum scene with Tom's skeleton, children looking up in awe. His worn teeth gleam under the lights. Ghost images of Tom and George appear, smiling.',
+    visualDescription: 'Museum scene with Tom\'s skeleton, children looking up in awe. His worn teeth gleam under the lights. Ghost images of Tom and George appear, smiling.',
     emotionalTone: 'inspiring',
     soundscape: ['museum_echoes', 'children_whispers', 'inspirational_music', 'ghostly_whale_song'],
     specialEffects: ['skeleton_coming_alive', 'memory_projections', 'worn_teeth_glowing']

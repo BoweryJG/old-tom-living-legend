@@ -16,6 +16,7 @@ const STORAGE_BUCKET = 'old-tom-audio';
 const AUDIO_SCHEMA = 'old_tom';
 const SCRIPTS_TABLE = 'narration_scripts';
 const AUDIO_TABLE = 'audio_files';
+const CACHE_TABLE = 'audio_cache';
 
 interface AudioCacheEntry {
   segment_id: string;

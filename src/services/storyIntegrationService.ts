@@ -61,22 +61,23 @@ class StoryIntegrationService {
     const segment = captainTomNarration[this.state.currentSegmentIndex];
     
     // Check if audio is cached
-    let audioUrl = this.audioCache.get(segment.id);
+    let audioUrl: string | undefined = this.audioCache.get(segment.id);
     
     if (!audioUrl) {
       // Generate audio on demand
       console.log(`🎙️ Generating audio for: ${segment.id}`);
-      audioUrl = await this.generateAudioForSegment(segment);
+      const generatedUrl = await this.generateAudioForSegment(segment);
       
-      if (audioUrl) {
-        this.audioCache.set(segment.id, audioUrl);
+      if (generatedUrl) {
+        audioUrl = generatedUrl;
+        this.audioCache.set(segment.id, generatedUrl);
       }
     }
 
     return {
       segment,
       audioUrl,
-      audioDuration: await this.getAudioDuration(audioUrl),
+      audioDuration: await this.getAudioDuration(audioUrl || null),
       visualTiming: this.calculateVisualTiming(segment)
     };
   }

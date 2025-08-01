@@ -1,0 +1,89 @@
+.iconic-opening-sequence {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000000;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.opening-text-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #ffffff;
+  z-index: 10;
+  width: 90%;
+  max-width: 800px;
+}
+
+.opening-title {
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 20px rgba(0, 150, 255, 0.5);
+  font-family: 'Cinzel', serif;
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #b3d9ff 50%,
+    #0066cc 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.opening-subtitle {
+  font-size: clamp(1.2rem, 3vw, 2rem);
+  font-weight: 200;
+  opacity: 0.9;
+  letter-spacing: 0.1em;
+  color: #b3d9ff;
+  text-shadow: 0 0 10px rgba(0, 150, 255, 0.3);
+}
+
+.fade-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000000;
+  z-index: 100;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .opening-text-overlay {
+    width: 95%;
+  }
+  
+  .opening-title {
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+  }
+  
+  .opening-subtitle {
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
+  }
+}
+
+/* Animation keyframes for enhanced effects */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.opening-title {
+  animation: shimmer 8s linear infinite;
+  background-size: 200% auto;
+}
