@@ -12,6 +12,8 @@ import {
   Stop as StopIcon
 } from '@mui/icons-material';
 
+console.log('App.tsx: Starting imports...');
+
 // Import components
 import OceanParticles from './components/OceanParticles';
 import OldTomCharacter from './components/OldTomCharacter';
@@ -20,11 +22,31 @@ import OrchestraManager from './components/OrchestraManager';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { AccessibilityProvider } from './components/accessibility/AccessibilityProvider';
 import LoadingScreen from './components/ui/LoadingScreen';
-import { higgsAudioService } from './services/higgsAudioService';
-import { webSpeechService } from './services/webSpeechService';
 import ChapterVisuals from './components/ChapterVisuals';
 import AmbientSounds from './components/AmbientSounds';
 import DebugPanel from './components/DebugPanel';
+
+console.log('App.tsx: Component imports complete, importing services...');
+
+// Import services with error handling
+let higgsAudioService: any = null;
+let webSpeechService: any = null;
+
+try {
+  higgsAudioService = require('./services/higgsAudioService').higgsAudioService;
+  console.log('App.tsx: higgsAudioService imported successfully');
+} catch (error) {
+  console.error('App.tsx: Failed to import higgsAudioService:', error);
+}
+
+try {
+  webSpeechService = require('./services/webSpeechService').webSpeechService;
+  console.log('App.tsx: webSpeechService imported successfully');
+} catch (error) {
+  console.error('App.tsx: Failed to import webSpeechService:', error);
+}
+
+console.log('App.tsx: All imports complete');
 
 // Story chapters
 const storyChapters = [
@@ -143,6 +165,8 @@ const theme = createTheme({
 });
 
 const App: React.FC = () => {
+  console.log('App: Component function starting...');
+  
   const [loading, setLoading] = useState(true);
   const [currentChapter, setCurrentChapter] = useState(0); // 0 = landing page
   const [chatVisible, setChatVisible] = useState(false);
@@ -151,8 +175,14 @@ const App: React.FC = () => {
   const [isNarrating, setIsNarrating] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
 
+  console.log('App: State initialized');
+
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1500);
+    console.log('App: Running initial useEffect');
+    const timer = setTimeout(() => {
+      console.log('App: Setting loading to false');
+      setLoading(false);
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -298,8 +328,27 @@ const App: React.FC = () => {
     };
   }, [currentAudio]);
 
+  console.log('App: Rendering, loading state:', loading);
+  
   if (loading) {
-    return <LoadingScreen />;
+    console.log('App: Showing loading screen');
+    try {
+      return <LoadingScreen />;
+    } catch (error) {
+      console.error('App: LoadingScreen failed:', error);
+      // Fallback loading UI
+      return (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh',
+          backgroundColor: '#0a1a2e'
+        }}>
+          <CircularProgress />
+        </div>
+      );
+    }
   }
 
   return (
@@ -330,6 +379,42 @@ const App: React.FC = () => {
               overflow: 'hidden',
             }}
           >
+            {/* Debug Overlay - Always visible */}
+            <Box sx={{ 
+              position: 'fixed', 
+              top: 10, 
+              right: 10, 
+              backgroundColor: 'rgba(0,0,0,0.8)', 
+              color: 'white',
+              padding: 2,
+              borderRadius: 1,
+              zIndex: 9999,
+              fontSize: '12px',
+              fontFamily: 'monospace',
+              maxWidth: '300px'
+            }}>
+              <div>Debug Info:</div>
+              <div>Loading: {loading ? 'YES' : 'NO'}</div>
+              <div>Chapter: {currentChapter}</div>
+              <div>Chat: {chatVisible ? 'YES' : 'NO'}</div>
+              <div>Services: {higgsAudioService ? '✓' : '✗'} Higgs, {webSpeechService ? '✓' : '✗'} Speech</div>
+              <div style={{ marginTop: '10px' }}>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  style={{ 
+                    padding: '5px 10px',
+                    backgroundColor: '#4CAF50',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Reload
+                </button>
+              </div>
+            </Box>
+            
             {/* Ocean Background */}
             <Box sx={{ position: 'absolute', inset: 0, zIndex: 1 }}>
               <OceanParticles 
