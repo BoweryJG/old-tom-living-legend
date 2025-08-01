@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Audio Generation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a1628;
+            color: #e8f1ff;
+        }
+        .container {
+            background: #1a2332;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #4a90e2;
+            text-align: center;
+        }
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        #status {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            font-size: 16px;
+            white-space: pre-wrap;
+        }
+        .segment {
+            background: rgba(74, 144, 226, 0.1);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+        .segment h3 {
+            margin-top: 0;
+            color: #4a90e2;
+        }
+        audio {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌊 Old Tom Audio Generation Test</h1>
+        
+        <div class="test-section">
+            <h2>Test 1: Web Speech API</h2>
+            <button onclick="testWebSpeech()">Test Web Speech API</button>
+            <div id="webSpeechStatus"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test 2: Generate First Segment</h2>
+            <button onclick="generateFirstSegment()">Generate First Segment Audio</button>
+            <div id="firstSegmentStatus"></div>
+            <audio id="firstSegmentAudio" controls style="display:none;"></audio>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test 3: Check Supabase Connection</h2>
+            <button onclick="checkSupabase()">Check Supabase Audio Tables</button>
+            <div id="supabaseStatus"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test 4: Story Integration</h2>
+            <button onclick="testStoryIntegration()">Test Story Integration Service</button>
+            <div id="integrationStatus"></div>
+        </div>
+        
+        <div id="status">Ready to test audio generation...</div>
+    </div>
+
+    <script type="module">
+    // Import services from the app
+    import { higgsAudioService } from '../src/services/higgsAudioService.js';
+    import { audioStorageService } from '../src/services/audioStorageService.js';
+    import { storyIntegrationService } from '../src/services/storyIntegrationService.js';
+    import { captainTomNarration } from '../src/content/story/captainTomNarration.js';
+    
+    // Make functions available globally
+    window.testWebSpeech = async function() {
+        const status = document.getElementById('webSpeechStatus');
+        status.textContent = 'Testing Web Speech API...';
+        
+        try {
+            // Test if Web Speech API is available
+            if ('speechSynthesis' in window) {
+                const voices = speechSynthesis.getVoices();
+                status.textContent = `✅ Web Speech API available!\nFound ${voices.length} voices`;
+                
+                // Test speaking
+                const utterance = new SpeechSynthesisUtterance("G'day mate, testing Old Tom's voice");
+                utterance.rate = 0.85;
+                utterance.pitch = 0.7;
+                speechSynthesis.speak(utterance);
+                
+                // List Australian voices
+                const aussieVoices = voices.filter(v => v.lang.includes('en-AU'));
+                if (aussieVoices.length > 0) {
+                    status.textContent += `\n\nAustralian voices found:\n${aussieVoices.map(v => `- ${v.name}`).join('\n')}`;
+                }
+            } else {
+                status.textContent = '❌ Web Speech API not supported in this browser';
+            }
+        } catch (error) {
+            status.textContent = '❌ Error: ' + error.message;
+        }
+    };
+    
+    window.generateFirstSegment = async function() {
+        const status = document.getElementById('firstSegmentStatus');
+        const audio = document.getElementById('firstSegmentAudio');
+        status.textContent = 'Generating audio for first segment...';
+        
+        try {
+            const firstSegment = captainTomNarration[0];
+            status.textContent = `Generating: "${firstSegment.text.substring(0, 50)}..."`;
+            
+            const audioUrl = await higgsAudioService.generateOldTomVoice(firstSegment.text);
+            
+            if (audioUrl) {
+                audio.src = audioUrl;
+                audio.style.display = 'block';
+                status.textContent = '✅ Audio generated successfully!';
+            } else {
+                status.textContent = '❌ Failed to generate audio';
+            }
+        } catch (error) {
+            status.textContent = '❌ Error: ' + error.message;
+            console.error(error);
+        }
+    };
+    
+    window.checkSupabase = async function() {
+        const status = document.getElementById('supabaseStatus');
+        status.textContent = 'Checking Supabase connection...';
+        
+        try {
+            // Initialize audio storage service
+            await audioStorageService.initialize();
+            
+            // Try to get all cached audio
+            const cachedAudio = await audioStorageService.getAllCachedAudio();
+            const count = Object.keys(cachedAudio).length;
+            
+            status.textContent = `✅ Supabase connected!\nFound ${count} cached audio files`;
+            
+            if (count > 0) {
+                status.textContent += '\n\nCached segments:';
+                for (const [segmentId, url] of Object.entries(cachedAudio)) {
+                    status.textContent += `\n- ${segmentId}`;
+                }
+            }
+        } catch (error) {
+            status.textContent = '❌ Supabase error: ' + error.message;
+            console.error(error);
+        }
+    };
+    
+    window.testStoryIntegration = async function() {
+        const status = document.getElementById('integrationStatus');
+        status.textContent = 'Testing story integration...';
+        
+        try {
+            // Initialize story
+            const initResult = await storyIntegrationService.initializeStory();
+            status.textContent = '✅ Story initialized!\n';
+            status.textContent += `First segment: ${initResult.firstSegment.id}\n`;
+            status.textContent += `Visual: ${initResult.visualDescription.substring(0, 50)}...\n`;
+            
+            // Get current segment with audio
+            const currentSegment = await storyIntegrationService.getCurrentSegment();
+            status.textContent += `\nCurrent segment audio: ${currentSegment.audioUrl ? 'Available' : 'Not generated'}`;
+            
+            // Get progress
+            const progress = storyIntegrationService.getProgress();
+            status.textContent += `\n\nProgress: ${progress.percentage.toFixed(1)}%`;
+            status.textContent += `\nChapter: ${progress.currentChapter}`;
+            status.textContent += `\nEmotional state: ${progress.emotionalJourney.current}`;
+        } catch (error) {
+            status.textContent = '❌ Integration error: ' + error.message;
+            console.error(error);
+        }
+    };
+    
+    // Update main status
+    document.getElementById('status').textContent = 'Test page loaded - Ready to test!';
+    </script>
+</body>
+</html>

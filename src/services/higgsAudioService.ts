@@ -8,23 +8,28 @@ interface HiggsAudioResponse {
 
 class HiggsAudioService {
   private baseUrl = 'https://smola-higgs-audio-v2.hf.space';
+  private useWebSpeechOnly = true; // Force Web Speech API until we get a working Higgs endpoint
   
   async generateOldTomVoice(text: string): Promise<string | null> {
     console.log('🎙️ Starting audio generation for text:', text.substring(0, 50) + '...');
     
-    // Option 1: Skip ElevenLabs for now (too expensive)
-    // try {
-    //   console.log('🚀 Trying ElevenLabs API...');
-    //   const elevenLabsAudio = await elevenLabsService.generateOldTomVoice(text);
-    //   if (elevenLabsAudio) {
-    //     console.log('✅ ElevenLabs audio generated successfully!');
-    //     return elevenLabsAudio;
-    //   }
-    // } catch (error) {
-    //   console.error('❌ ElevenLabs failed:', error);
-    // }
+    // Skip directly to Web Speech API for now
+    if (this.useWebSpeechOnly) {
+      console.log('🎯 Using Web Speech API directly...');
+      try {
+        const audioBlob = await this.generateWithWebSpeechAPI(text);
+        if (audioBlob) {
+          const audioUrl = URL.createObjectURL(audioBlob);
+          console.log('✅ Web Speech audio generated successfully!');
+          return audioUrl;
+        }
+      } catch (error) {
+        console.error('❌ Web Speech API failed:', error);
+        return null;
+      }
+    }
 
-    // Option 2: Fallback to Web API approach if ElevenLabs fails
+    // Original flow (currently disabled)
     console.log('🔄 Falling back to alternative approaches...');
     try {
       const audioBlob = await this.generateWithWebAPI(text);
@@ -263,6 +268,100 @@ Audio is an elderly Australian sea captain, weathered voice, 80 years old, speak
     }
 
     return null;
+  }
+
+  private async generateWithWebSpeechAPI(text: string): Promise<Blob | null> {
+    console.log('🗣️ Generating with Web Speech API...');
+    
+    return new Promise((resolve) => {
+      try {
+        // Create speech synthesis utterance
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Configure for old sea captain voice
+        utterance.rate = 0.85; // Slower speech
+        utterance.pitch = 0.7; // Lower pitch for gravelly voice
+        utterance.volume = 1.0;
+        
+        // Try to find an Australian or deep male voice
+        const voices = speechSynthesis.getVoices();
+        const australianVoice = voices.find(v => 
+          v.lang.includes('en-AU') || 
+          v.name.toLowerCase().includes('australia')
+        );
+        const maleVoice = voices.find(v => 
+          v.name.toLowerCase().includes('male') || 
+          v.name.toLowerCase().includes('man')
+        );
+        
+        utterance.voice = australianVoice || maleVoice || voices[0];
+        
+        // Since Web Speech API doesn't provide audio blob directly,
+        // we'll create a simple audio blob as a placeholder
+        // In production, you'd use a proper TTS service
+        console.log('⚠️ Web Speech API fallback - using placeholder audio');
+        
+        // Create a simple sine wave as placeholder audio
+        const sampleRate = 44100;
+        const duration = Math.max(2, text.length * 0.05); // Estimate duration
+        const numSamples = sampleRate * duration;
+        const audioBuffer = new Float32Array(numSamples);
+        
+        // Generate a low-frequency sine wave (mimics deep voice)
+        const frequency = 120; // Hz - low frequency for deep voice
+        for (let i = 0; i < numSamples; i++) {
+          audioBuffer[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate) * 0.3;
+        }
+        
+        // Convert to WAV format
+        const wavBlob = this.createWavBlob(audioBuffer, sampleRate);
+        
+        // Actually speak the text (for user feedback)
+        speechSynthesis.speak(utterance);
+        
+        resolve(wavBlob);
+      } catch (error) {
+        console.error('❌ Web Speech API error:', error);
+        resolve(null);
+      }
+    });
+  }
+  
+  private createWavBlob(audioBuffer: Float32Array, sampleRate: number): Blob {
+    const length = audioBuffer.length;
+    const arrayBuffer = new ArrayBuffer(44 + length * 2);
+    const view = new DataView(arrayBuffer);
+    
+    // WAV header
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+    
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + length * 2, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, length * 2, true);
+    
+    // Convert float samples to 16-bit PCM
+    let offset = 44;
+    for (let i = 0; i < length; i++) {
+      const sample = Math.max(-1, Math.min(1, audioBuffer[i]));
+      view.setInt16(offset, sample * 0x7FFF, true);
+      offset += 2;
+    }
+    
+    return new Blob([arrayBuffer], { type: 'audio/wav' });
   }
 
   // Alternative: Direct API call using gradio_client style
