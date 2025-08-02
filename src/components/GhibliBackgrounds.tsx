@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Box, keyframes } from '@mui/material';
+import { Box, keyframes, styled } from '@mui/material';
 
 interface GhibliBackgroundProps {
   chapter: number;
@@ -39,6 +39,76 @@ const kenBurnsAnimation = keyframes`
   100% { transform: scale(1.1) translate(-2%, -2%); }
 `;
 
+// Styled component to avoid complex union type error
+const BackgroundLayer = styled(Box)<{ backgroundimage: string }>(({ backgroundimage }) => ({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 1,
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: '-10%',
+    left: '-10%',
+    right: '-10%',
+    bottom: '-10%',
+    backgroundImage: `url(${backgroundimage})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    filter: 'blur(0px)',
+    animation: `${kenBurnsAnimation} 30s ease-in-out infinite alternate`,
+    willChange: 'transform',
+  }
+}));
+
+const MoodOverlay = styled(Box)<{ background: string }>(({ background }) => ({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  background,
+  zIndex: 2,
+  pointerEvents: 'none',
+}));
+
+const ParticlesOverlay = styled(Box)({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 3,
+  pointerEvents: 'none',
+  overflow: 'hidden',
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    width: '200%',
+    height: '200%',
+    top: '-50%',
+    left: '-50%',
+    background: `radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%)`,
+    animation: `${floatAnimation} 20s ease-in-out infinite`,
+  }
+});
+
+const VignetteOverlay = styled(Box)({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 4,
+  pointerEvents: 'none',
+  background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.4) 100%)',
+});
+
 const GhibliBackgrounds: React.FC<GhibliBackgroundProps> = ({ chapter, mood }) => {
   const backgroundImage = chapterBackgrounds[chapter as keyof typeof chapterBackgrounds] || chapterBackgrounds[0];
   
@@ -63,85 +133,16 @@ const GhibliBackgrounds: React.FC<GhibliBackgroundProps> = ({ chapter, mood }) =
   return (
     <>
       {/* Main background layer */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 1,
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: '-10%',
-            left: '-10%',
-            right: '-10%',
-            bottom: '-10%',
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'blur(0px)',
-            animation: `${kenBurnsAnimation} 30s ease-in-out infinite alternate`,
-            willChange: 'transform',
-          }
-        }}
-      />
+      <BackgroundLayer backgroundimage={backgroundImage} />
 
       {/* Mood overlay */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: moodOverlay,
-          zIndex: 2,
-          pointerEvents: 'none',
-        }}
-      />
+      <MoodOverlay background={moodOverlay} />
 
       {/* Animated particles overlay */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 3,
-          pointerEvents: 'none',
-          overflow: 'hidden',
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            width: '200%',
-            height: '200%',
-            top: '-50%',
-            left: '-50%',
-            background: `radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
-                        radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%)`,
-            animation: `${floatAnimation} 20s ease-in-out infinite`,
-          }
-        }}
-      />
+      <ParticlesOverlay />
 
       {/* Vignette effect */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 4,
-          pointerEvents: 'none',
-          background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.4) 100%)',
-        }}
-      />
+      <VignetteOverlay />
     </>
   );
 };

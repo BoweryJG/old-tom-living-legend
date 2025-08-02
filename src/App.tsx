@@ -27,6 +27,9 @@ import GhibliBackgrounds from './components/GhibliBackgrounds';
 import CinematicTransition from './components/CinematicTransition';
 import StoryMomentAnimations from './components/StoryMomentAnimations';
 
+import { expandedStoryChapters } from './data/expandedStory';
+import FloatingImageElements from './components/FloatingImageElements';
+
 // Import services with error handling
 // TEMPORARILY DISABLED - Focusing on visuals first
 let higgsAudioService: any = null;
@@ -54,9 +57,6 @@ if (typeof window !== 'undefined') {
   
   console.log('App.tsx: All imports complete');
 }
-
-import { expandedStoryChapters } from './data/expandedStory';
-import FloatingImageElements from './components/FloatingImageElements';
 
 // Use the expanded story chapters
 const storyChapters = expandedStoryChapters;
