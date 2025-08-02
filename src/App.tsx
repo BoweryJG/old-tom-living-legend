@@ -23,96 +23,43 @@ import LoadingScreen from './components/ui/LoadingScreen';
 import ChapterVisuals from './components/ChapterVisuals';
 import AmbientSounds from './components/AmbientSounds';
 import DebugPanel from './components/DebugPanel';
+import GhibliBackgrounds from './components/GhibliBackgrounds';
+import CinematicTransition from './components/CinematicTransition';
+import StoryMomentAnimations from './components/StoryMomentAnimations';
 
 // Import services with error handling
+// TEMPORARILY DISABLED - Focusing on visuals first
 let higgsAudioService: any = null;
 let webSpeechService: any = null;
 
 // Initialize logging after all imports
 if (typeof window !== 'undefined') {
   console.log('App.tsx: Starting imports...');
-  console.log('App.tsx: Component imports complete, importing services...');
+  console.log('App.tsx: Component imports complete, audio services disabled for now');
   
-  try {
-    higgsAudioService = require('./services/higgsAudioService').higgsAudioService;
-    console.log('App.tsx: higgsAudioService imported successfully');
-  } catch (error) {
-    console.error('App.tsx: Failed to import higgsAudioService:', error);
-  }
+  // TEMPORARILY DISABLED - Will re-enable after visual enhancements
+  // try {
+  //   higgsAudioService = require('./services/higgsAudioService').higgsAudioService;
+  //   console.log('App.tsx: higgsAudioService imported successfully');
+  // } catch (error) {
+  //   console.error('App.tsx: Failed to import higgsAudioService:', error);
+  // }
 
-  try {
-    webSpeechService = require('./services/webSpeechService').webSpeechService;
-    console.log('App.tsx: webSpeechService imported successfully');
-  } catch (error) {
-    console.error('App.tsx: Failed to import webSpeechService:', error);
-  }
+  // try {
+  //   webSpeechService = require('./services/webSpeechService').webSpeechService;
+  //   console.log('App.tsx: webSpeechService imported successfully');
+  // } catch (error) {
+  //   console.error('App.tsx: Failed to import webSpeechService:', error);
+  // }
   
   console.log('App.tsx: All imports complete');
 }
 
-// Story chapters
-const storyChapters = [
-  {
-    id: 1,
-    title: "The Legend Begins",
-    year: "1895",
-    content: `In the cold waters of Twofold Bay, Eden, a remarkable partnership was about to begin. 
-    Old Tom, a massive orca with distinctive white markings, approached the Davidson whaling station 
-    for the first time. The whalers watched in awe as this intelligent creature seemed to be trying 
-    to communicate with them.`,
-    mood: 'mysterious' as const
-  },
-  {
-    id: 2,
-    title: "The Law of the Tongue",
-    year: "1900",
-    content: `The Davidsons discovered Old Tom's proposal: he and his pod would help hunt whales 
-    in exchange for the tongue and lips - their favorite parts. This became known as the 'Law of 
-    the Tongue.' For over 30 years, man and orca would work as one, creating the most extraordinary 
-    interspecies partnership in recorded history.`,
-    mood: 'peaceful' as const
-  },
-  {
-    id: 3,
-    title: "The Hunt",
-    year: "1910",
-    content: `Old Tom would spot whales far out at sea. Swimming rapidly to shore, he'd leap and 
-    crash down - WHACK! WHACK! WHACK! The thunderous tail slaps echoed across the bay. The Davidson 
-    men would rush to their boats, following Old Tom as he led them to their prey. Together, they 
-    were unstoppable.`,
-    mood: 'adventurous' as const
-  },
-  {
-    id: 4,
-    title: "The Storm of 1920",
-    year: "1920",
-    content: `During a fierce storm, young Jackie Davidson's boat capsized. As the crew struggled 
-    in the churning seas, Old Tom appeared. He swam beneath Jackie, keeping him afloat for hours 
-    until rescue arrived. That day, Old Tom proved the bond between human and orca went far beyond 
-    mere hunting partnership.`,
-    mood: 'dramatic' as const
-  },
-  {
-    id: 5,
-    title: "The Final Hunt",
-    year: "1930",
-    content: `Old Tom's teeth, worn from decades of rope-pulling, could no longer grip as they once 
-    did. On September 17, 1930, after one last hunt with his human partners, Old Tom disappeared into 
-    the deep. Days later, his body washed ashore. The Davidsons buried their partner with honors, 
-    ending an era that would never be repeated.`,
-    mood: 'nostalgic' as const
-  },
-  {
-    id: 6,
-    title: "The Museum",
-    year: "Today",
-    content: `Today, Old Tom's skeleton rests in the Eden Killer Whale Museum, his worn teeth 
-    telling the story of a unique partnership. Visitors from around the world come to learn about 
-    the orca who chose to work with humans, proving that understanding between species is possible 
-    when respect flows both ways.`,
-    mood: 'peaceful' as const
-  }
-];
+import { expandedStoryChapters } from './data/expandedStory';
+import FloatingImageElements from './components/FloatingImageElements';
+
+// Use the expanded story chapters
+const storyChapters = expandedStoryChapters;
 
 // Create theme
 const theme = createTheme({
@@ -176,6 +123,9 @@ const App: React.FC = () => {
   const [characterAnimation, setCharacterAnimation] = useState<'idle' | 'greeting' | 'speaking' | 'swimming'>('idle');
   const [isNarrating, setIsNarrating] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionFrom, setTransitionFrom] = useState(0);
+  const [transitionTo, setTransitionTo] = useState(0);
 
   console.log('App: State initialized');
 
@@ -211,106 +161,74 @@ const App: React.FC = () => {
   };
 
   const startStory = () => {
-    setCurrentChapter(1);
+    setTransitionFrom(0);
+    setTransitionTo(1);
+    setIsTransitioning(true);
     setCharacterAnimation('greeting');
     playWhaleSound();
-    setTimeout(() => setCharacterAnimation('idle'), 2000);
+    
+    setTimeout(() => {
+      setCurrentChapter(1);
+      setIsTransitioning(false);
+      setCharacterAnimation('idle');
+    }, 3000);
   };
 
-  // Narration function
+  // Narration function - TEMPORARILY SIMPLIFIED
   const narateChapter = async (chapterIndex: number) => {
-    // Stop any current narration
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.src = '';
-    }
-
+    // For now, just play whale sounds and animate the character
     setIsNarrating(true);
     setCharacterAnimation('speaking');
-
-    try {
-      const chapterText = storyChapters[chapterIndex].content;
-      console.log('🎤 Generating Old Tom voice for chapter:', chapterIndex);
-      console.log('Text:', chapterText);
-      
-      const audioUrl = await higgsAudioService.generateOldTomVoice(chapterText);
-      console.log('🔊 Generated audio URL:', audioUrl);
-      
-      if (audioUrl) {
-        const audio = new Audio(audioUrl);
-        setCurrentAudio(audio);
-        
-        audio.onended = () => {
-          console.log('✅ Audio playback completed');
-          setIsNarrating(false);
-          setCharacterAnimation('idle');
-          setCurrentAudio(null);
-        };
-        
-        audio.onerror = (e) => {
-          console.error('❌ Audio playback error:', e);
-          console.error('Failed URL was:', audioUrl);
-          // Fallback to whale sounds if narration fails
-          playWhaleSound();
-          setIsNarrating(false);
-          setCharacterAnimation('idle');
-        };
-        
-        console.log('▶️ Starting audio playback...');
-        await audio.play();
-      } else {
-        console.error('❌ No audio URL returned from Higgs service');
-        console.log('🔄 Falling back to Web Speech API...');
-        
-        try {
-          // Use Web Speech API as fallback
-          await webSpeechService.generateOldTomVoice(chapterText);
-          setIsNarrating(false);
-          setCharacterAnimation('idle');
-        } catch (speechError) {
-          console.error('❌ Web Speech API also failed:', speechError);
-          // Final fallback to whale sounds
-          playWhaleSound();
-          setIsNarrating(false);
-          setCharacterAnimation('idle');
-        }
-      }
-    } catch (error) {
-      console.error('Error narrating chapter:', error);
-      playWhaleSound();
+    playWhaleSound();
+    
+    // Simulate narration time based on text length
+    const chapterText = storyChapters[chapterIndex].content;
+    const duration = Math.min(chapterText.length * 50, 10000); // Max 10 seconds
+    
+    setTimeout(() => {
       setIsNarrating(false);
       setCharacterAnimation('idle');
-    }
+    }, duration);
+    
+    // TODO: Re-implement with proper audio services after visual enhancements
   };
 
   const stopNarration = () => {
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.src = '';
-      setCurrentAudio(null);
-    }
-    // Also stop Web Speech if it's playing
-    webSpeechService.stop();
+    // Simplified for now
     setIsNarrating(false);
     setCharacterAnimation('idle');
   };
 
   const nextChapter = () => {
-    if (currentChapter < storyChapters.length) {
+    if (currentChapter < storyChapters.length && !isTransitioning) {
       stopNarration();
-      setCurrentChapter(currentChapter + 1);
+      setTransitionFrom(currentChapter);
+      setTransitionTo(currentChapter + 1);
+      setIsTransitioning(true);
       setCharacterAnimation('swimming');
       playWhaleSound();
-      setTimeout(() => setCharacterAnimation('idle'), 1500);
+      
+      setTimeout(() => {
+        setCurrentChapter(currentChapter + 1);
+        setIsTransitioning(false);
+        setCharacterAnimation('idle');
+      }, 3000);
     }
   };
 
   const prevChapter = () => {
-    if (currentChapter > 1) {
+    if (currentChapter > 1 && !isTransitioning) {
       stopNarration();
-      setCurrentChapter(currentChapter - 1);
+      setTransitionFrom(currentChapter);
+      setTransitionTo(currentChapter - 1);
+      setIsTransitioning(true);
       setCharacterAnimation('swimming');
-      setTimeout(() => setCharacterAnimation('idle'), 1500);
+      
+      setTimeout(() => {
+        setCurrentChapter(currentChapter - 1);
+        setIsTransitioning(false);
+        setCharacterAnimation('idle');
+      }, 3000);
     }
   };
 
@@ -368,19 +286,23 @@ const App: React.FC = () => {
             sx={{
               position: 'relative',
               minHeight: '100vh',
-              background: currentChapter === 0 
-                ? 'linear-gradient(180deg, #0a1a2e 0%, #1a3a4e 50%, #0a2a3e 100%)'
-                : currentChapter === 4 
-                ? 'linear-gradient(180deg, #1a1a1a 0%, #2c2c2c 50%, #1a2a3a 100%)' // Stormy
-                : currentChapter === 5
-                ? 'linear-gradient(180deg, #1a2a3e 0%, #3a2a1e 50%, #2a1a0e 100%)' // Sunset
-                : currentChapter === 6
-                ? 'linear-gradient(180deg, #2a3a4e 0%, #3a4a5e 50%, #4a5a6e 100%)' // Museum day
-                : 'linear-gradient(180deg, #0a1a2e 0%, #1a3a4e 50%, #0a2a3e 100%)', // Default ocean
-              transition: 'background 2s ease-in-out',
+              backgroundColor: '#0a1a2e', // Base color while images load
               overflow: 'hidden',
             }}
           >
+            {/* Studio Ghibli Style Backgrounds */}
+            <GhibliBackgrounds chapter={currentChapter} mood={currentMood} />
+            
+            {/* Cinematic Chapter Transitions */}
+            <CinematicTransition
+              isTransitioning={isTransitioning}
+              fromChapter={transitionFrom}
+              toChapter={transitionTo}
+              chapterTitle={transitionTo > 0 && transitionTo <= storyChapters.length ? storyChapters[transitionTo - 1].title : ''}
+              chapterYear={transitionTo > 0 && transitionTo <= storyChapters.length ? storyChapters[transitionTo - 1].year : ''}
+              onTransitionComplete={() => setIsTransitioning(false)}
+            />
+            
             {/* Debug Overlay - Always visible */}
             <Box sx={{ 
               position: 'fixed', 
@@ -417,8 +339,14 @@ const App: React.FC = () => {
               </div>
             </Box>
             
-            {/* Ocean Background */}
-            <Box sx={{ position: 'absolute', inset: 0, zIndex: 1 }}>
+            {/* Story-specific Moment Animations */}
+            <StoryMomentAnimations 
+              chapter={currentChapter} 
+              isActive={currentChapter > 0 && !isTransitioning} 
+            />
+            
+            {/* Subtle Ocean Particles Overlay */}
+            <Box sx={{ position: 'absolute', inset: 0, zIndex: 5, opacity: 0.4 }}>
               <OceanParticles 
                 intensity={currentChapter === 0 ? "low" : currentChapter === 4 ? "high" : "medium"} 
                 mood={currentMood}
@@ -431,6 +359,33 @@ const App: React.FC = () => {
                 chapter={currentChapter} 
                 mood={currentMood}
               />
+            )}
+            
+            {/* Floating Image Elements from FLUX */}
+            {currentChapter > 0 && currentChapter <= storyChapters.length && (
+              <>
+                {storyChapters[currentChapter - 1].imageElements?.floating && (
+                  <FloatingImageElements
+                    images={storyChapters[currentChapter - 1].imageElements.floating}
+                    type="floating"
+                    chapter={currentChapter}
+                  />
+                )}
+                {storyChapters[currentChapter - 1].imageElements?.parallax && (
+                  <FloatingImageElements
+                    images={storyChapters[currentChapter - 1].imageElements.parallax}
+                    type="parallax"
+                    chapter={currentChapter}
+                  />
+                )}
+                {storyChapters[currentChapter - 1].imageElements?.foreground && (
+                  <FloatingImageElements
+                    images={[storyChapters[currentChapter - 1].imageElements.foreground!]}
+                    type="foreground"
+                    chapter={currentChapter}
+                  />
+                )}
+              </>
             )}
 
             {/* Landing Page */}

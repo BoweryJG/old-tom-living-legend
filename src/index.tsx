@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { Provider } from 'react-redux';
+import { store } from './store';
 
 // Create a debug div immediately
 const debugDiv = document.createElement('div');
@@ -180,9 +182,11 @@ try {
   
   root.render(
     <React.StrictMode>
-      <InitErrorBoundary>
-        <ComponentToRender />
-      </InitErrorBoundary>
+      <Provider store={store}>
+        <InitErrorBoundary>
+          <ComponentToRender />
+        </InitErrorBoundary>
+      </Provider>
     </React.StrictMode>
   );
   
