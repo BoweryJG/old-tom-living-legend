@@ -52,7 +52,7 @@ class AudioStorageService {
     try {
       // Create storage bucket if it doesn't exist
       const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(b => b.name === STORAGE_BUCKET);
+      const bucketExists = buckets?.some((b: { name: string }) => b.name === STORAGE_BUCKET);
       
       if (!bucketExists) {
         await supabase.storage.createBucket(STORAGE_BUCKET, {
@@ -258,7 +258,7 @@ class AudioStorageService {
       if (error) throw error;
 
       const audioMap: Record<string, string> = {};
-      data?.forEach(entry => {
+      data?.forEach((entry: { segment_id: string; public_url: string }) => {
         audioMap[entry.segment_id] = entry.public_url;
       });
 
@@ -297,7 +297,7 @@ class AudioStorageService {
         .list();
 
       if (files) {
-        const filePaths = files.map(f => f.name);
+        const filePaths = files.map((f: { name: string }) => f.name);
         await supabase.storage
           .from(STORAGE_BUCKET)
           .remove(filePaths);
